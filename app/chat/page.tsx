@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { useUser, useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search } from 'lucide-react';
 
@@ -41,6 +42,8 @@ interface MatchCard {
 
 export default function ChatPage() {
   const router = useRouter();
+  const { user, isLoaded } = useUser();
+  const { isSignedIn } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +51,6 @@ export default function ChatPage() {
   const [displayIndex, setDisplayIndex] = useState(0); // Track which 3 matches to show
   const [savedProfiles, setSavedProfiles] = useState<Set<string>>(new Set());
   const [conversationComplete, setConversationComplete] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [matchesWidth, setMatchesWidth] = useState(384); // Default width in px (w-96)
   const [isResizing, setIsResizing] = useState(false);
@@ -63,22 +65,62 @@ export default function ChatPage() {
   }, [messages]);
 
   useEffect(() => {
-    // Check authentication
-    const user = localStorage.getItem('mooring_user');
-    if (!user) {
-      router.push('/login');
+    // Check authentication with Clerk
+    if (isLoaded && !isSignedIn) {
+      router.push('/sign-in');
       return;
     }
-    setIsAuthenticated(true);
     
-      // Add welcome message
+    // Sync user to Supabase when they log in
+    async function syncUser() {
+      if (!isSignedIn || !user) return;
+      
+      try {
+        // Check if user exists in Supabase
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('clerk_user_id', user.id)
+          .single();
+        
+        // If not, create them
+        if (!existingUser) {
+          const { data: newUser, error } = await supabase
+            .from('profiles')
+            .insert({
+              clerk_user_id: user.id,
+              email: user.emailAddresses[0]?.emailAddress || '',
+              name: user.fullName || user.firstName || 'User',
+              org_id: 'nexus-maine'
+            })
+            .select()
+            .single();
+          
+          if (error) {
+            console.error('Error creating profile:', error);
+          } else {
+            console.log('User synced to Supabase:', newUser);
+          }
+        }
+      } catch (error) {
+        console.error('Error syncing user:', error);
+      }
+    }
+    
+    if (isSignedIn && user) {
+      syncUser();
+    }
+    
+    if (isSignedIn && messages.length === 0) {
+      // Add welcome message only once
       setMessages([{
         id: '1',
         role: 'assistant',
         content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
         timestamp: new Date()
       }]);
-  }, [router]);
+    }
+  }, [router, isLoaded, isSignedIn, messages.length, user]);
 
   const formatMessageContent = (content: string) => {
     // Convert markdown-style formatting to HTML
@@ -335,8 +377,21 @@ export default function ChatPage() {
   };
 
   // Don't render until authenticated
-  if (!isAuthenticated) {
-    return null;
+  if (!isLoaded) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-white">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+  
+  if (!isSignedIn) {
+    router.push('/sign-in');
+    return (
+      <div className="h-screen flex items-center justify-center bg-white">
+        <p className="text-gray-500">Redirecting to sign in...</p>
+      </div>
+    );
   }
 
   return (
@@ -459,7 +514,15 @@ export default function ChatPage() {
             }}
           >
             {currentMatches.length === 0 ? null : (
-              currentMatches.slice(displayIndex, displayIndex + 3).map((match, localIndex) => {
+              displayIndex >= currentMatches.length ? (
+                <div className="flex items-center justify-center h-full -mt-12">
+                  <div className="text-center space-y-4">
+                    <p className="text-sm font-medium text-gray-500">No more matches</p>
+                    <p className="text-xs text-gray-400">Try refining your search to see more results</p>
+                  </div>
+                </div>
+              ) : (
+                currentMatches.slice(displayIndex, displayIndex + 3).map((match, localIndex) => {
                 const isExpanded = expandedMatchId === match.profile.id;
                 return (
                   <div key={match.profile.id} className="mb-4 p-4 bg-white rounded-lg border border-gray-200 relative hover:shadow-sm transition-shadow cursor-pointer pr-16" onClick={() => setExpandedMatchId(isExpanded ? null : match.profile.id)}>
@@ -534,6 +597,7 @@ export default function ChatPage() {
                   </div>
                 );
               })
+              )
             )}
           </div>
         </div>
