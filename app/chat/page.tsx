@@ -312,25 +312,25 @@ export default function ChatPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-stone-900 mb-2" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Find Collaborators</h1>
-          <p className="text-lg text-stone-600">Ask me what you're looking for</p>
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-stone-900 mb-2" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Find Collaborators</h1>
+          <p className="text-base text-stone-600">Ask me what you're looking for</p>
         </div>
 
         <div className="grid grid-cols-2 gap-8" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 min-h-0">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] px-4 py-3 rounded-xl ${
+                    className={`max-w-[85%] px-4 py-2.5 rounded-xl shadow-sm ${
                       message.role === 'user'
                         ? 'bg-gray-900 text-white'
-                        : 'bg-gray-50 text-gray-800'
+                        : 'bg-gray-50 text-gray-800 border border-gray-200'
                     }`}
                   >
                     <div 
@@ -356,10 +356,10 @@ export default function ChatPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-gray-100 px-6 py-4">
+            <div className="border-t border-gray-100 px-6 py-4 bg-gray-50/30">
               <div className="flex space-x-3">
                 <input
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm placeholder-gray-400 text-gray-900"
+                  className="flex-1 border border-gray-300 bg-white rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm placeholder-gray-400 text-gray-900 transition-all"
                   placeholder={conversationComplete ? "Start a new chat" : "Ask about collaborators..."}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -367,7 +367,7 @@ export default function ChatPage() {
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="bg-gray-900 text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-teal-600 text-white px-5 py-2.5 rounded-xl hover:bg-teal-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   onClick={sendMessage}
                   disabled={isLoading || conversationComplete}
                 >
@@ -383,17 +383,18 @@ export default function ChatPage() {
               <h3 className="text-base font-semibold text-stone-900">Matches</h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 min-h-0">
               {currentMatches.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="w-16 h-16 bg-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <User className="w-8 h-8 text-gray-400" />
+                <div className="text-center py-20">
+                  <div className="w-20 h-20 bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                    <Search className="w-10 h-10 text-teal-600" />
                   </div>
-                  <p className="text-gray-500 text-sm font-medium">Start a conversation to see potential matches</p>
+                  <p className="text-stone-700 text-base font-semibold mb-2">No matches yet</p>
+                  <p className="text-stone-500 text-sm">Start a conversation to see potential collaborators</p>
                 </div>
               ) : (
                 currentMatches.map((match) => (
-                  <div key={match.profile.id} className="bg-white rounded-2xl p-6 border border-gray-200/50 shadow-sm hover:shadow-md transition-shadow">
+                  <div key={match.profile.id} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900 text-base">{match.profile.name}</h3>
@@ -440,10 +441,10 @@ export default function ChatPage() {
                   <button
                     onClick={() => handleSaveProfile(match.profile)}
                     disabled={savedProfiles.has(match.profile.id)}
-                    className={`flex-1 flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                    className={`flex-1 flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 shadow-sm ${
                       savedProfiles.has(match.profile.id)
                         ? 'bg-green-50 text-green-700 cursor-not-allowed'
-                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                        : 'bg-teal-600 text-white hover:bg-teal-700 hover:shadow-md'
                     }`}
                   >
                     <Heart className="w-4 h-4 mr-2" />
@@ -451,7 +452,7 @@ export default function ChatPage() {
                   </button>
                   <button
                     onClick={() => handlePassProfile(match.profile.id)}
-                    className="px-4 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                    className="px-4 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all"
                   >
                     <X className="w-4 h-4" />
                   </button>
