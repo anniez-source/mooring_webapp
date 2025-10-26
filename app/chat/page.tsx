@@ -287,60 +287,55 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50 pt-4">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between h-20 items-center">
-            <Link href="/" className="flex items-center -space-x-2">
+      <nav className="bg-white border-b border-gray-200/50 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-8">
+          <div className="flex justify-between h-16 items-center">
+            <Link href="/" className="flex items-center gap-2">
               <img 
                 src="/mooring-logo.svg" 
                 alt="Mooring" 
-                className="w-24 h-18"
+                className="w-16 h-12"
               />
-              <span className="text-3xl font-bold text-stone-900 -ml-4" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
+              <span className="text-xl font-medium text-gray-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
             </Link>
             <div className="hidden md:block">
-              <div className="flex items-center space-x-8">
-                <Link href="/" className="text-base text-stone-600 hover:text-stone-900 transition-colors font-sans">Home</Link>
-                <Link href="/contact" className="text-base text-stone-600 hover:text-stone-900 transition-colors font-sans">Contact</Link>
+              <div className="flex items-center space-x-6">
+                <Link href="/" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Home</Link>
+                <Link href="/contact" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Contact</Link>
               </div>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-12 pb-8 border-b border-gray-300 shadow-sm">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Find Collaborators</h1>
-          <p className="text-base text-gray-500 font-light">Ask me what you're looking for</p>
-        </div>
-
-        <div className="flex gap-0" style={{ minHeight: 'calc(100vh - 300px)' }}>
-          {/* Left: Chat */}
-          <div className="w-1/2 bg-gradient-to-br from-gray-50/50 to-gray-100/30 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6 min-h-0">
+      {/* Main Content - Split View */}
+      <div className="flex h-full">
+        {/* Chat Panel */}
+        <div className="flex-1 flex flex-col border-r border-gray-100">
+          <div className="flex-1 overflow-y-auto px-6 py-8">
+            <div className="max-w-2xl mx-auto space-y-8">
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.role === 'assistant' && (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white">
-                      <Sparkles className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1">
+                      <Sparkles className="w-5 h-5 text-[#DC2626]" />
                     </div>
                   )}
                   <div
-                    className={`max-w-[75%] px-5 py-4 ${
+                    className={`max-w-[80%] ${
                       message.role === 'user'
-                        ? 'bg-gray-900 text-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow duration-200'
-                        : 'bg-white text-gray-900 rounded-2xl border border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow duration-200'
-                    }`}
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-900'
+                    } px-4 py-3 rounded-2xl`}
                   >
                     <div 
-                      className="text-sm leading-relaxed"
-                      style={{ lineHeight: '1.6' }}
+                      className="text-[15px] leading-relaxed"
+                      style={{ lineHeight: '1.7' }}
                       dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
                     />
                   </div>
@@ -348,115 +343,104 @@ export default function ChatPage() {
               ))}
               
               {isLoading && (
-                <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center flex-shrink-0 shadow-sm">
-                    <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                <div className="flex gap-4 justify-start">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Sparkles className="w-5 h-5 text-[#DC2626] animate-pulse" />
                   </div>
-                  <div className="bg-white border border-gray-100 px-4 py-3 rounded-lg shadow-sm">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                    </div>
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
+          </div>
 
-            {/* Input Area */}
-            <div className="border-t border-gray-200 bg-white px-8 py-6">
+          {/* Input */}
+          <div className="border-t border-gray-100 px-6 py-5">
+            <div className="max-w-2xl mx-auto">
               <div className="relative">
                 <input
-                  className="w-full border border-gray-300 bg-white rounded-xl pl-4 pr-14 py-4 focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] text-sm placeholder-gray-400 text-gray-900 transition-all duration-200"
-                  placeholder={conversationComplete ? "Start a new chat" : "What kind of help are you looking for?"}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-5 pr-14 py-3.5 text-sm placeholder-gray-400 text-gray-900 focus:bg-white focus:border-[#DC2626] focus:ring-1 focus:ring-[#DC2626] transition-all duration-150"
+                  placeholder="Ask what you're looking for..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-100 text-gray-600 p-2.5 rounded-lg hover:bg-[#DC2626] hover:text-white hover:shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#DC2626] disabled:opacity-30 transition-colors duration-150 p-1.5"
                   onClick={sendMessage}
                   disabled={isLoading || conversationComplete || !input.trim()}
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4.5 h-4.5" />
                 </button>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Vertical Divider */}
-          <div className="w-px bg-[#E5E7EB] shadow-sm"></div>
-
-          {/* Right: Matches */}
-          <div className="w-1/2 bg-[#FAFBFC] flex flex-col overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 flex-shrink-0 shadow-sm bg-white/50">
-              <h3 className="text-base font-bold text-gray-900">Matches</h3>
-            </div>
-
-            <div className="flex-1 overflow-y-auto min-h-0 px-8 py-6">
-              {currentMatches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-20">
-                  <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 flex items-center justify-center mb-8 shadow-inner animate-pulse">
-                    <Search className="w-16 h-16 text-gray-400" />
-                  </div>
-                  <h4 className="text-gray-900 font-bold text-lg mb-3">Ready to match</h4>
-                  <p className="text-gray-600 text-sm text-center max-w-sm leading-relaxed">Ask me what you're looking for and I'll find the perfect collaborators</p>
+        {/* Matches Panel */}
+        <div className="w-80 flex flex-col border-l border-gray-100 bg-gray-50/30">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">Matches</h3>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {currentMatches.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
+                  <Search className="w-12 h-12 text-gray-300" />
                 </div>
-              ) : (
-                currentMatches.map((match) => (
-                  <div key={match.profile.id} className="group py-4 px-8 border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                        {match.profile.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900">{match.profile.name}</h3>
-                          <span className="text-xs text-gray-500">·</span>
-                          <span className="text-xs text-gray-400">{match.profile.ms_program}</span>
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 mb-3">
-                          {match.reasoning}
-                        </p>
-                        <div className="flex items-center gap-4">
-                          {match.profile.email && (
-                            <a href={`mailto:${match.profile.email}`} className="text-xs text-gray-500 hover:text-[#DC2626] transition-colors flex items-center gap-1.5">
-                              <Mail className="w-3 h-3" />
-                              Email
-                            </a>
-                          )}
-                          {match.profile.linkedin_url && (
-                            <a
-                              href={match.profile.linkedin_url.startsWith('http') ? match.profile.linkedin_url : `https://${match.profile.linkedin_url}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-gray-500 hover:text-[#DC2626] transition-colors flex items-center gap-1.5"
-                            >
-                              <Linkedin className="w-3 h-3" />
-                              LinkedIn
-                            </a>
-                          )}
-                          <button
-                            onClick={() => handleSaveProfile(match.profile)}
-                            disabled={savedProfiles.has(match.profile.id)}
-                            className={`text-xs transition-colors flex items-center gap-1.5 ${
-                              savedProfiles.has(match.profile.id)
-                                ? 'text-green-600'
-                                : 'text-gray-500 hover:text-[#DC2626]'
-                            }`}
+                <p className="text-sm text-gray-500 max-w-xs">Start a conversation to see matches</p>
+              </div>
+            ) : (
+              currentMatches.map((match) => (
+                <div key={match.profile.id} className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
+                      {match.profile.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm mb-0.5">{match.profile.name}</h3>
+                      <p className="text-xs text-gray-500 mb-2">{match.profile.ms_program}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-3">
+                        {match.reasoning}
+                      </p>
+                      <div className="flex items-center gap-3">
+                        {match.profile.email && (
+                          <a href={`mailto:${match.profile.email}`} className="text-xs text-gray-500 hover:text-[#DC2626] transition-colors">
+                            <Mail className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {match.profile.linkedin_url && (
+                          <a
+                            href={match.profile.linkedin_url.startsWith('http') ? match.profile.linkedin_url : `https://${match.profile.linkedin_url}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-gray-500 hover:text-[#DC2626] transition-colors"
                           >
-                            <Heart className={`w-3 h-3 ${savedProfiles.has(match.profile.id) ? 'fill-current' : ''}`} />
-                            {savedProfiles.has(match.profile.id) ? 'Saved' : 'Save'}
-                          </button>
-                        </div>
+                            <Linkedin className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleSaveProfile(match.profile)}
+                          disabled={savedProfiles.has(match.profile.id)}
+                          className={`ml-auto transition-colors ${
+                            savedProfiles.has(match.profile.id)
+                              ? 'text-green-600'
+                              : 'text-gray-400 hover:text-[#DC2626]'
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 ${savedProfiles.has(match.profile.id) ? 'fill-current' : ''}`} />
+                        </button>
                       </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
