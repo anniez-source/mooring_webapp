@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search } from 'lucide-react';
+import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search, Sparkles } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -320,17 +320,22 @@ export default function ChatPage() {
         <div className="flex gap-0" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
           <div className="w-1/2 bg-gray-50/30 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-4 min-h-0">
+            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6 min-h-0">
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
+                  {message.role === 'assistant' && (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                  )}
                   <div
                     className={`max-w-[80%] px-4 py-3 ${
                       message.role === 'user'
-                        ? 'bg-gray-900 text-white rounded-lg'
-                        : 'bg-[#F9FAFB] text-gray-900 rounded-lg'
+                        ? 'bg-gray-900 text-white rounded-lg shadow-sm'
+                        : 'bg-white text-gray-900 rounded-lg border border-gray-100 shadow-sm'
                     }`}
                   >
                     <div 
@@ -342,8 +347,11 @@ export default function ChatPage() {
               ))}
               
               {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-50 px-4 py-3 rounded-xl">
+                <div className="flex gap-3 justify-start">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                  </div>
+                  <div className="bg-white border border-gray-100 px-4 py-3 rounded-lg shadow-sm">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -367,7 +375,7 @@ export default function ChatPage() {
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-lg hover:bg-[#DC2626] hover:text-white active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-lg hover:bg-[#DC2626] hover:text-white hover:shadow-md active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={sendMessage}
                   disabled={isLoading || conversationComplete}
                 >
@@ -388,8 +396,12 @@ export default function ChatPage() {
 
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4 min-h-0">
               {currentMatches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-20">
-                  <p className="text-gray-500 text-sm font-medium">Start a conversation to see potential matches</p>
+                <div className="flex flex-col items-center justify-center h-full py-20 px-8">
+                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center mb-6 animate-pulse">
+                    <Search className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <h4 className="text-gray-900 font-semibold mb-2">No matches yet</h4>
+                  <p className="text-gray-500 text-sm text-center max-w-xs">Start a conversation to see potential collaborators</p>
                 </div>
               ) : (
                 currentMatches.map((match) => (
