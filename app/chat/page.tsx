@@ -312,34 +312,35 @@ export default function ChatPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-10 pb-8 border-b border-gray-200">
-          <h1 className="text-3xl font-semibold text-stone-900 mb-3" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Find Collaborators</h1>
-          <p className="text-base text-stone-500">Ask me what you're looking for</p>
+        <div className="mb-12 pb-8 border-b border-gray-300 shadow-sm">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Find Collaborators</h1>
+          <p className="text-base text-gray-500 font-light">Ask me what you're looking for</p>
         </div>
 
         <div className="flex gap-0" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
-          <div className="w-1/2 bg-gray-50/30 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6 min-h-0">
+          <div className="w-1/2 bg-gradient-to-br from-gray-50/50 to-gray-100/30 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6 min-h-0">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.role === 'assistant' && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <Sparkles className="w-4 h-4 text-white" />
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-white">
+                      <Sparkles className="w-5 h-5 text-white" />
                     </div>
                   )}
                   <div
-                    className={`max-w-[80%] px-4 py-3 ${
+                    className={`max-w-[75%] px-5 py-4 ${
                       message.role === 'user'
-                        ? 'bg-gray-900 text-white rounded-lg shadow-sm'
-                        : 'bg-white text-gray-900 rounded-lg border border-gray-100 shadow-sm'
+                        ? 'bg-gray-900 text-white rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow duration-200'
+                        : 'bg-white text-gray-900 rounded-2xl border border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-shadow duration-200'
                     }`}
                   >
                     <div 
                       className="text-sm leading-relaxed"
+                      style={{ lineHeight: '1.6' }}
                       dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
                     />
                   </div>
@@ -365,19 +366,19 @@ export default function ChatPage() {
 
             {/* Input Area */}
             <div className="border-t border-gray-200 bg-white px-8 py-6">
-              <div className="flex space-x-3">
+              <div className="relative">
                 <input
-                  className="flex-1 border border-gray-200 bg-white rounded-lg px-4 py-2.5 focus:ring-1 focus:ring-[#DC2626] focus:border-[#DC2626] text-sm placeholder-gray-400 text-gray-900 transition-all"
-                  placeholder={conversationComplete ? "Start a new chat" : "Ask about collaborators..."}
+                  className="w-full border border-gray-300 bg-white rounded-xl pl-4 pr-14 py-4 focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] text-sm placeholder-gray-400 text-gray-900 transition-all duration-200"
+                  placeholder={conversationComplete ? "Start a new chat" : "What kind of help are you looking for?"}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-lg hover:bg-[#DC2626] hover:text-white hover:shadow-md active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-100 text-gray-600 p-2.5 rounded-lg hover:bg-[#DC2626] hover:text-white hover:shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={sendMessage}
-                  disabled={isLoading || conversationComplete}
+                  disabled={isLoading || conversationComplete || !input.trim()}
                 >
                   <Send className="w-4 h-4" />
                 </button>
@@ -386,22 +387,22 @@ export default function ChatPage() {
           </div>
 
           {/* Vertical Divider */}
-          <div className="w-px bg-gray-300"></div>
+          <div className="w-px bg-[#E5E7EB] shadow-sm"></div>
 
           {/* Right: Matches */}
-          <div className="w-1/2 bg-white flex flex-col overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-200 flex-shrink-0">
-              <h3 className="text-base font-semibold text-gray-900">Matches</h3>
+          <div className="w-1/2 bg-[#FAFBFC] flex flex-col overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 flex-shrink-0 shadow-sm bg-white/50">
+              <h3 className="text-base font-bold text-gray-900">Matches</h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 px-8 py-6">
               {currentMatches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-20 px-8">
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center mb-6 animate-pulse">
-                    <Search className="w-12 h-12 text-gray-400" />
+                <div className="flex flex-col items-center justify-center h-full py-20">
+                  <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 flex items-center justify-center mb-8 shadow-inner animate-pulse">
+                    <Search className="w-16 h-16 text-gray-400" />
                   </div>
-                  <h4 className="text-gray-900 font-semibold mb-2">No matches yet</h4>
-                  <p className="text-gray-500 text-sm text-center max-w-xs">Start a conversation to see potential collaborators</p>
+                  <h4 className="text-gray-900 font-bold text-lg mb-3">Ready to match</h4>
+                  <p className="text-gray-600 text-sm text-center max-w-sm leading-relaxed">Ask me what you're looking for and I'll find the perfect collaborators</p>
                 </div>
               ) : (
                 currentMatches.map((match) => (
