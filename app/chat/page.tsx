@@ -317,9 +317,9 @@ export default function ChatPage() {
           <p className="text-base text-stone-500">Ask me what you're looking for</p>
         </div>
 
-        <div className="grid grid-cols-[1fr_auto_1fr] gap-[1px]" style={{ minHeight: 'calc(100vh - 300px)' }}>
+        <div className="grid grid-cols-2 gap-6" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
-          <div className="bg-white rounded-l-2xl border border-gray-200 border-r-0 shadow-md flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-md flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0 bg-gray-50/20">
               {messages.map((message) => (
                 <div
@@ -377,11 +377,8 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Vertical Divider */}
-          <div className="w-[1px] bg-gradient-to-b from-transparent via-gray-300 to-transparent"></div>
-
           {/* Right: Matches */}
-          <div className="bg-white rounded-r-2xl border border-gray-200 border-l-0 shadow-md flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-md flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
               <h3 className="text-base font-semibold text-stone-900">Matches</h3>
             </div>
