@@ -312,25 +312,25 @@ export default function ChatPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-stone-900 mb-2" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Find Collaborators</h1>
-          <p className="text-base text-stone-600">Ask me what you're looking for</p>
+        <div className="mb-10 pb-8 border-b border-gray-200">
+          <h1 className="text-3xl font-semibold text-stone-900 mb-3" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Find Collaborators</h1>
+          <p className="text-base text-stone-500">Ask me what you're looking for</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-8" style={{ minHeight: 'calc(100vh - 300px)' }}>
+        <div className="grid grid-cols-2 gap-0" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0">
+          <div className="bg-white rounded-l-2xl border border-gray-200 border-r-0 shadow-md flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0 bg-gray-50/20">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] px-4 py-2.5 rounded-xl shadow-sm ${
+                    className={`max-w-[85%] px-4 py-2.5 rounded-xl shadow ${
                       message.role === 'user'
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-50 text-gray-800 border border-gray-200'
+                        ? 'bg-gray-900 text-white shadow-gray-900/20'
+                        : 'bg-white text-gray-800 border border-gray-200 shadow-sm'
                     }`}
                   >
                     <div 
@@ -356,7 +356,7 @@ export default function ChatPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-gray-100 px-6 py-4 bg-gray-50/30">
+            <div className="border-t border-gray-200 px-6 py-4 bg-white">
               <div className="flex space-x-3">
                 <input
                   className="flex-1 border border-gray-300 bg-white rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm placeholder-gray-400 text-gray-900 transition-all"
@@ -377,20 +377,26 @@ export default function ChatPage() {
             </div>
           </div>
 
+          {/* Vertical Divider */}
+          <div className="w-px bg-gradient-to-b from-transparent via-gray-200 to-transparent"></div>
+
           {/* Right: Matches */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="bg-white rounded-r-2xl border border-gray-200 border-l-0 shadow-md flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
               <h3 className="text-base font-semibold text-stone-900">Matches</h3>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 min-h-0">
               {currentMatches.length === 0 ? (
-                <div className="text-center py-20">
-                  <div className="w-20 h-20 bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <div className="flex flex-col items-center justify-center h-full py-16 px-4">
+                  <div className="w-20 h-20 bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
                     <Search className="w-10 h-10 text-teal-600" />
                   </div>
-                  <p className="text-stone-700 text-base font-semibold mb-2">No matches yet</p>
-                  <p className="text-stone-500 text-sm">Start a conversation to see potential collaborators</p>
+                  <div className="text-center max-w-xs">
+                    <p className="text-stone-900 font-semibold text-base mb-2">No matches yet</p>
+                    <p className="text-stone-600 text-sm leading-relaxed">Start a conversation to see potential collaborators</p>
+                    <p className="text-stone-500 text-xs mt-3 italic">I'll suggest relevant people from the Roux network based on your needs</p>
+                  </div>
                 </div>
               ) : (
                 currentMatches.map((match) => (
