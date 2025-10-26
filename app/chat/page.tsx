@@ -359,7 +359,7 @@ export default function ChatPage() {
             <div className="border-t border-gray-200 px-6 py-4 bg-white">
               <div className="flex space-x-3">
                 <input
-                  className="flex-1 border border-gray-300 bg-white rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-red-600 focus:border-red-600 text-sm placeholder-gray-400 text-gray-900 transition-all"
+                  className="flex-1 border border-gray-300 bg-white rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#DC2626] focus:border-[#DC2626] text-sm placeholder-gray-400 text-gray-900 transition-all"
                   placeholder={conversationComplete ? "Start a new chat" : "Ask about collaborators..."}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -367,7 +367,7 @@ export default function ChatPage() {
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="bg-red-600 text-white px-5 py-2.5 rounded-xl hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="bg-[#DC2626] text-white px-5 py-2.5 rounded-xl hover:bg-[#EF4444] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   onClick={sendMessage}
                   disabled={isLoading || conversationComplete}
                 >
@@ -444,7 +444,7 @@ export default function ChatPage() {
                     className={`flex-1 flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 shadow-sm ${
                       savedProfiles.has(match.profile.id)
                         ? 'bg-green-50 text-green-700 cursor-not-allowed'
-                        : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md'
+                        : 'bg-[#DC2626] text-white hover:bg-[#EF4444] hover:shadow-md'
                     }`}
                   >
                     <Heart className="w-4 h-4 mr-2" />
