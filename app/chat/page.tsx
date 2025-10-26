@@ -405,69 +405,53 @@ export default function ChatPage() {
                 </div>
               ) : (
                 currentMatches.map((match) => (
-                  <div key={match.profile.id} className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 text-base">{match.profile.name}</h3>
-                    <p className="text-sm text-gray-600 font-medium">{match.profile.ms_program}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-full font-semibold">
-                      {match.relevanceScore}%
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <p className="text-sm text-gray-700 leading-relaxed font-medium">
-                    <span className="font-semibold text-gray-900">Why relevant:</span> {match.reasoning}
-                  </p>
-                </div>
-
-                <div className="space-y-3 mb-6">
-                  {match.profile.email && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Mail className="w-4 h-4 mr-3" />
-                      <a href={`mailto:${match.profile.email}`} className="hover:text-gray-900 transition-colors font-medium">
-                        {match.profile.email}
-                      </a>
+                  <div key={match.profile.id} className="group py-4 border-b border-gray-100 hover:bg-gray-50/50 transition-colors -mx-4 px-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                        {match.profile.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900">{match.profile.name}</h3>
+                          <span className="text-xs text-gray-500">·</span>
+                          <span className="text-xs text-gray-400">{match.profile.ms_program}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 mb-3">
+                          {match.reasoning}
+                        </p>
+                        <div className="flex items-center gap-4">
+                          {match.profile.email && (
+                            <a href={`mailto:${match.profile.email}`} className="text-xs text-gray-500 hover:text-[#DC2626] transition-colors flex items-center gap-1.5">
+                              <Mail className="w-3 h-3" />
+                              Email
+                            </a>
+                          )}
+                          {match.profile.linkedin_url && (
+                            <a
+                              href={match.profile.linkedin_url.startsWith('http') ? match.profile.linkedin_url : `https://${match.profile.linkedin_url}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-gray-500 hover:text-[#DC2626] transition-colors flex items-center gap-1.5"
+                            >
+                              <Linkedin className="w-3 h-3" />
+                              LinkedIn
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleSaveProfile(match.profile)}
+                            disabled={savedProfiles.has(match.profile.id)}
+                            className={`text-xs transition-colors flex items-center gap-1.5 ${
+                              savedProfiles.has(match.profile.id)
+                                ? 'text-green-600'
+                                : 'text-gray-500 hover:text-[#DC2626]'
+                            }`}
+                          >
+                            <Heart className={`w-3 h-3 ${savedProfiles.has(match.profile.id) ? 'fill-current' : ''}`} />
+                            {savedProfiles.has(match.profile.id) ? 'Saved' : 'Save'}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                  {match.profile.linkedin_url && (
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Linkedin className="w-4 h-4 mr-3" />
-                      <a
-                        href={match.profile.linkedin_url.startsWith('http') ? match.profile.linkedin_url : `https://${match.profile.linkedin_url}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-gray-900 transition-colors font-medium"
-                      >
-                        LinkedIn Profile
-                      </a>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => handleSaveProfile(match.profile)}
-                    disabled={savedProfiles.has(match.profile.id)}
-                    className={`flex-1 flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 shadow-sm ${
-                      savedProfiles.has(match.profile.id)
-                        ? 'bg-green-50 text-green-700 cursor-not-allowed'
-                        : 'bg-[#DC2626] text-white hover:bg-[#EF4444] hover:shadow-md'
-                    }`}
-                  >
-                    <Heart className="w-4 h-4 mr-2" />
-                    {savedProfiles.has(match.profile.id) ? 'Saved' : 'Save'}
-                  </button>
-                  <button
-                    onClick={() => handlePassProfile(match.profile.id)}
-                    className="px-4 py-3 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
                   </div>
                 ))
               )}
