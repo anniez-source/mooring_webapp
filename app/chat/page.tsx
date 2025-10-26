@@ -287,26 +287,39 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8">
-      {/* Large Modal Container */}
-      <div className="w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden backdrop-blur-sm relative">
-        {/* Header */}
-        <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Find Collaborators</h2>
-            <p className="text-sm text-gray-500 mt-1">Ask me what you're looking for</p>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+      {/* Navbar */}
+      <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50 pt-4">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between h-20 items-center">
+            <Link href="/" className="flex items-center -space-x-2">
+              <img 
+                src="/mooring-logo.svg" 
+                alt="Mooring" 
+                className="w-24 h-18"
+              />
+              <span className="text-3xl font-bold text-stone-900 -ml-4" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
+            </Link>
+            <div className="hidden md:block">
+              <div className="flex items-center space-x-8">
+                <Link href="/" className="text-base text-stone-600 hover:text-stone-900 transition-colors font-sans">Home</Link>
+                <Link href="/contact" className="text-base text-stone-600 hover:text-stone-900 transition-colors font-sans">Contact</Link>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={() => window.location.href = '/'}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-stone-900 mb-2" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Find Collaborators</h1>
+          <p className="text-lg text-stone-600">Ask me what you're looking for</p>
         </div>
 
-        <div className="grid grid-cols-2" style={{ height: '600px', maxHeight: 'calc(100vh - 200px)' }}>
+        <div className="grid grid-cols-2 gap-8" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
-          <div className="border-r border-gray-100 flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 min-h-0">
               {messages.map((message) => (
                 <div
@@ -365,9 +378,9 @@ export default function ChatPage() {
           </div>
 
           {/* Right: Matches */}
-          <div className="flex flex-col bg-gray-50/50 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-sm font-semibold text-gray-900">Matches</h3>
+              <h3 className="text-base font-semibold text-stone-900">Matches</h3>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
