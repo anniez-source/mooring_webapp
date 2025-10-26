@@ -45,9 +45,13 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentMatches, setCurrentMatches] = useState<MatchCard[]>([]);
+  const [displayIndex, setDisplayIndex] = useState(0); // Track which 3 matches to show
   const [savedProfiles, setSavedProfiles] = useState<Set<string>>(new Set());
   const [conversationComplete, setConversationComplete] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
+  const [matchesWidth, setMatchesWidth] = useState(384); // Default width in px (w-96)
+  const [isResizing, setIsResizing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -67,13 +71,13 @@ export default function ChatPage() {
     }
     setIsAuthenticated(true);
     
-    // Add welcome message
-    setMessages([{
-      id: '1',
-      role: 'assistant',
-      content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise, cofounder, or connection do you need?",
-      timestamp: new Date()
-    }]);
+      // Add welcome message
+      setMessages([{
+        id: '1',
+        role: 'assistant',
+        content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
+        timestamp: new Date()
+      }]);
   }, [router]);
 
   const formatMessageContent = (content: string) => {
@@ -122,20 +126,21 @@ export default function ChatPage() {
     return { text, people };
   };
 
-  const startNewChat = () => {
-    setMessages([{
-      id: '1',
-      role: 'assistant',
-      content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise, cofounder, or connection do you need?",
-      timestamp: new Date()
-    }]);
-    setCurrentMatches([]);
-    setSavedProfiles(new Set());
-    setConversationComplete(false);
-  };
+    const startNewChat = () => {
+      setMessages([{
+        id: '1',
+        role: 'assistant',
+        content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
+        timestamp: new Date()
+      }]);
+      setCurrentMatches([]);
+      setDisplayIndex(0);
+      setSavedProfiles(new Set());
+      setConversationComplete(false);
+    };
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading || conversationComplete) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -148,6 +153,7 @@ export default function ChatPage() {
     setInput('');
     setIsLoading(true);
     setCurrentMatches([]); // Clear previous matches
+    setDisplayIndex(0); // Reset to start
 
     try {
       const conversationHistory = messages.map(msg => ({
@@ -177,13 +183,12 @@ export default function ChatPage() {
       let receivedText = '';
       let assistantMessageId = (Date.now() + 1).toString();
 
-      // Add a placeholder message for streaming
+      // Add placeholder message immediately for better UX
       setMessages(prev => [...prev, {
         id: assistantMessageId,
         role: 'assistant',
         content: '',
-        timestamp: new Date(),
-        people: []
+        timestamp: new Date()
       }]);
 
       while (true) {
@@ -198,6 +203,7 @@ export default function ChatPage() {
             const data = JSON.parse(line.substring(6));
             if (data.text) {
               receivedText += data.text;
+              // Update the message in real-time
               setMessages(prev =>
                 prev.map(msg =>
                   msg.id === assistantMessageId ? { ...msg, content: receivedText } : msg
@@ -211,6 +217,8 @@ export default function ChatPage() {
       // After streaming is complete, parse the full content and update the message
       const { text: finalContent, people: matchedPeople } = parseAssistantResponse(receivedText);
       
+      console.log('Number of matched people:', matchedPeople.length);
+      
       // Create match cards with reasoning
       const matchCards: MatchCard[] = matchedPeople.map((profile, index) => ({
         profile,
@@ -218,18 +226,17 @@ export default function ChatPage() {
         relevanceScore: 95 - (index * 5) // Mock relevance scores
       }));
 
+      console.log('Match cards created:', matchCards.length);
       setCurrentMatches(matchCards);
       
+      // Update message with final content and people (for any matched profiles)
       setMessages(prev =>
         prev.map(msg =>
           msg.id === assistantMessageId ? { ...msg, content: finalContent, people: matchedPeople } : msg
         )
       );
 
-      // Mark conversation as complete only if we found matches
-      if (matchCards.length > 0) {
-        setConversationComplete(true);
-      }
+      // Don't mark as complete - allow users to keep searching
 
     } catch (error: any) {
       console.error('Error sending message:', error);
@@ -245,7 +252,7 @@ export default function ChatPage() {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey && !conversationComplete) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -278,7 +285,53 @@ export default function ChatPage() {
   };
 
   const handlePassProfile = (profileId: string) => {
-    setCurrentMatches(prev => prev.filter(match => match.profile.id !== profileId));
+    // Instead of removing, just advance to show next match
+    // Advance to the next available match in the slice
+    setDisplayIndex(prev => {
+      // Allow advancing even if it means showing fewer than 3 matches
+      // This lets users see all matches including the last ones
+      const nextIndex = prev + 1;
+      // Only prevent if we'd go completely beyond the array
+      return nextIndex <= currentMatches.length ? nextIndex : prev;
+    });
+    setExpandedMatchId(null); // Close any expanded cards
+  };
+
+  // Resize handlers
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isResizing) {
+        e.preventDefault(); // Prevent text selection
+        const newWidth = window.innerWidth - e.clientX;
+        // Constrain between 300px and 600px
+        if (newWidth >= 300 && newWidth <= 600) {
+          setMatchesWidth(newWidth);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    if (isResizing) {
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
   };
 
   // Don't render until authenticated
@@ -287,30 +340,30 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="h-screen flex flex-col bg-white">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200/50 sticky top-0 z-50">
+      <nav className="bg-white border-b border-gray-200/50">
         <div className="max-w-6xl mx-auto px-8">
           <div className="flex justify-between h-16 items-center">
             <Link href="/" className="flex items-center">
               <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
             </Link>
-            <div className="hidden md:block">
-              <div className="flex items-center space-x-6">
-                <Link href="/" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Home</Link>
-                <Link href="/contact" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Contact</Link>
-              </div>
+            <div className="hidden md:flex items-center space-x-6">
+              <Link href="/communities" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Communities</Link>
+              <Link href="/chat" className="text-sm text-gray-900 font-medium">Find People</Link>
+              <Link href="/saved" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Saved</Link>
+              <Link href="/profile" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Profile</Link>
             </div>
           </div>
         </div>
       </nav>
 
       {/* Main Content - Split View */}
-      <div className="flex h-full">
+      <div className="flex flex-1 border-t border-[#F1F3F5] min-h-0">
         {/* Chat Panel */}
-        <div className="flex-1 flex flex-col border-r border-gray-100">
-          <div className="flex-1 overflow-y-auto px-6 py-8">
-            <div className="max-w-2xl mx-auto space-y-8">
+        <div className="flex-1 flex flex-col border-r border-gray-100 min-h-0">
+          <div className="flex-1 overflow-y-auto px-6 py-6" style={{ minHeight: 0 }}>
+            <div className="max-w-2xl mx-auto space-y-5">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -354,25 +407,25 @@ export default function ChatPage() {
           </div>
 
           {/* Input */}
-          <div className="border-t border-gray-100 px-6 py-5">
+          <div className="border-t border-gray-100 px-6 py-4">
             <div className="max-w-2xl mx-auto">
               <div className="relative">
                 <input
-                  className="w-full bg-white rounded-2xl pl-5 pr-14 py-3.5 text-sm placeholder-gray-400 text-gray-900 focus:ring-2 focus:ring-[#DC2626]/20 transition-all duration-150"
+                  className="w-full bg-white border border-gray-200 rounded-2xl pl-5 pr-14 py-4 text-sm placeholder-gray-400 text-gray-800 focus:border-gray-300 transition-all duration-200 shadow-sm"
                   placeholder="Ask what you're looking for..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  disabled={isLoading || conversationComplete}
+                  disabled={isLoading}
                 />
                 <button
                   className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-all duration-150 ${
                     input.trim() 
-                      ? 'text-[#DC2626] hover:text-[#EF4444]' 
+                      ? 'text-[#DC2626] hover:text-[#EF4444] hover:opacity-70' 
                       : 'text-gray-300'
                   }`}
                   onClick={sendMessage}
-                  disabled={isLoading || conversationComplete || !input.trim()}
+                  disabled={isLoading || !input.trim()}
                 >
                   <Send className="w-4.5 h-4.5" />
                 </button>
@@ -382,36 +435,40 @@ export default function ChatPage() {
         </div>
 
         {/* Matches Panel */}
-        <div className="w-80 flex flex-col border-l border-gray-100 bg-gray-50/30">
-          <div className="px-6 py-4 border-b border-[#F1F3F5]">
-            <h3 className="text-sm font-semibold text-gray-900">Matches</h3>
-          </div>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            {currentMatches.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                <div className="w-36 h-36 rounded-full bg-gray-100 flex items-center justify-center mb-6">
-                  <Search className="w-14 h-14 text-gray-300" />
-                </div>
-                <p className="text-sm text-gray-500 max-w-sm mb-1">Start a conversation to see matches</p>
-                <p className="text-xs text-gray-400">Describe what you're looking for and I'll find perfect matches</p>
+        <div className="flex flex-col border-l border-gray-100 bg-white relative min-h-0" style={{ width: `${matchesWidth}px` }}>
+          {/* Resize handle */}
+          <div 
+            className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-teal-600 z-20 transition-colors select-none"
+            onMouseDown={handleMouseDown}
+            style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+          >
+            <div className="absolute left-1/2 top-[40%] -translate-x-1/2 z-30 pointer-events-none select-none">
+              <div className="flex items-center select-none">
+                <ChevronRight className="w-10 h-10 text-teal-600 cursor-col-resize pointer-events-none" />
               </div>
-            ) : (
-              currentMatches.map((match) => (
-                <div key={match.profile.id} className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
-                      {match.profile.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 text-sm mb-0.5">{match.profile.name}</h3>
-                      <p className="text-xs text-gray-500 mb-2">{match.profile.ms_program}</p>
-                      <p className="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-3">
-                        {match.reasoning}
-                      </p>
-                      <div className="flex items-center gap-3">
+            </div>
+          </div>
+          <div className="px-8 py-4 border-b border-gray-100 bg-gradient-to-b from-white to-gray-50/30">
+            <h3 className="text-lg font-medium text-gray-900 tracking-normal" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Matches</h3>
+          </div>
+          <div 
+            className="flex-1 overflow-y-auto px-6 py-6"
+            style={{
+              backgroundImage: 'linear-gradient(rgba(13, 148, 136, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(13, 148, 136, 0.08) 1px, transparent 1px)',
+              backgroundSize: '30px 30px'
+            }}
+          >
+            {currentMatches.length === 0 ? null : (
+              currentMatches.slice(displayIndex, displayIndex + 3).map((match, localIndex) => {
+                const isExpanded = expandedMatchId === match.profile.id;
+                return (
+                  <div key={match.profile.id} className="mb-4 p-4 bg-white rounded-lg border border-gray-200 relative hover:shadow-sm transition-shadow cursor-pointer pr-16" onClick={() => setExpandedMatchId(isExpanded ? null : match.profile.id)}>
+                    {/* Action icons group - top right (shown when expanded) */}
+                    {isExpanded && (
+                      <div className="absolute top-2 right-8 flex items-center gap-2 z-20">
                         {match.profile.email && (
-                          <a href={`mailto:${match.profile.email}`} className="text-xs text-gray-500 hover:text-[#DC2626] transition-colors">
-                            <Mail className="w-3.5 h-3.5" />
+                          <a href={`mailto:${match.profile.email}`} className="text-gray-400 hover:text-[#DC2626] transition-colors" onClick={(e) => e.stopPropagation()}>
+                            <Mail className="w-4 h-4" />
                           </a>
                         )}
                         {match.profile.linkedin_url && (
@@ -419,15 +476,19 @@ export default function ChatPage() {
                             href={match.profile.linkedin_url.startsWith('http') ? match.profile.linkedin_url : `https://${match.profile.linkedin_url}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-gray-500 hover:text-[#DC2626] transition-colors"
+                            className="text-gray-400 hover:text-[#DC2626] transition-colors"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Linkedin className="w-3.5 h-3.5" />
+                            <Linkedin className="w-4 h-4" />
                           </a>
                         )}
                         <button
-                          onClick={() => handleSaveProfile(match.profile)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSaveProfile(match.profile);
+                          }}
                           disabled={savedProfiles.has(match.profile.id)}
-                          className={`ml-auto transition-colors ${
+                          className={`transition-colors ${
                             savedProfiles.has(match.profile.id)
                               ? 'text-green-600'
                               : 'text-gray-400 hover:text-[#DC2626]'
@@ -436,10 +497,43 @@ export default function ChatPage() {
                           <Heart className={`w-4 h-4 ${savedProfiles.has(match.profile.id) ? 'fill-current' : ''}`} />
                         </button>
                       </div>
+                    )}
+                    
+                    {/* Dismiss button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const actualIndex = displayIndex + localIndex;
+                        // Pass the current index rather than profile ID
+                        handlePassProfile(currentMatches[actualIndex].profile.id);
+                      }}
+                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors z-20"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    
+                    {/* Content - full width */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
+                        {match.profile.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 text-sm mb-0.5">{match.profile.name}</h3>
+                        <p className="text-xs text-gray-500 mb-2">{match.profile.ms_program}</p>
+                        {isExpanded ? (
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                            {match.reasoning}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
+                            {match.reasoning}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

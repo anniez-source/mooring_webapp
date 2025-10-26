@@ -17,13 +17,17 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    // For now, simple email validation
-    if (email && email.includes('@')) {
-      // Store in localStorage for demo purposes
+    // Hardcoded demo credentials
+    const DEMO_EMAIL = 'demo';
+    const DEMO_PASSWORD = 'demo';
+
+    // Check credentials
+    if (email.toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD) {
+      // Store in localStorage
       localStorage.setItem('mooring_user', JSON.stringify({ email, loggedIn: true }));
       router.push('/chat');
     } else {
-      setError('Please enter a valid email address');
+      setError('Invalid email or password');
       setIsLoading(false);
     }
   };
@@ -51,15 +55,15 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
-                Email
+                Username
               </label>
               <input
                 id="email"
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-600 focus:border-transparent text-sm text-gray-900"
-                placeholder="your@email.com"
+                placeholder="Username"
                 required
               />
             </div>
@@ -74,7 +78,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-600 focus:border-transparent text-sm text-gray-900"
-                placeholder="Enter your password"
+                placeholder="Password"
               />
             </div>
 
@@ -95,10 +99,6 @@ export default function LoginPage() {
           </div>
         </form>
 
-        {/* Footer */}
-        <div className="px-8 pb-8 text-center text-sm text-gray-500">
-          <p>Demo login - enter any email to access the portal</p>
-        </div>
       </div>
     </div>
   );
