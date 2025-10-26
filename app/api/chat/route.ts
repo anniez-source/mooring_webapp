@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { supabase } from '@/lib/supabase';
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
 // Define the comprehensive system prompt
 const SYSTEM_PROMPT = `You are a matching assistant for Roux Institute's innovation community network.
 
@@ -94,6 +89,19 @@ You are professional, thoughtful, and focused solely on creating meaningful conn
 
 export async function POST(req: NextRequest) {
   try {
+    // Check for API key
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not set in environment variables');
+      return NextResponse.json({ 
+        error: 'Anthropic API key is invalid or not set.' 
+      }, { status: 401 });
+    }
+
+    // Initialize Anthropic client inside the handler
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
     const { message, conversationHistory, conversationId } = await req.json();
 
     // Fetch all profiles from Supabase
