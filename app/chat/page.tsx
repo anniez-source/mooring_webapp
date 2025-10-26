@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search, Sparkles } from 'lucide-react';
+import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -292,13 +292,8 @@ export default function ChatPage() {
       <nav className="bg-white border-b border-gray-200/50 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-8">
           <div className="flex justify-between h-16 items-center">
-            <Link href="/" className="flex items-center gap-2">
-              <img 
-                src="/mooring-logo.svg" 
-                alt="Mooring" 
-                className="w-16 h-12"
-              />
-              <span className="text-xl font-medium text-gray-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
+            <Link href="/" className="flex items-center">
+              <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
             </Link>
             <div className="hidden md:block">
               <div className="flex items-center space-x-6">
@@ -322,20 +317,20 @@ export default function ChatPage() {
                   className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.role === 'assistant' && (
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1">
-                      <Sparkles className="w-5 h-5 text-[#DC2626]" />
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1 p-1.5">
+                      <img src="/mooring-logo.svg" alt="Mooring" className="w-full h-full object-contain" />
                     </div>
                   )}
                   <div
                     className={`max-w-[80%] ${
                       message.role === 'user'
                         ? 'bg-gray-900 text-white'
-                        : 'text-gray-900'
+                        : 'bg-[#F9FAFB] text-gray-900'
                     } px-4 py-3 rounded-2xl`}
                   >
                     <div 
                       className="text-[15px] leading-relaxed"
-                      style={{ lineHeight: '1.7' }}
+                      style={{ lineHeight: '1.6' }}
                       dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
                     />
                   </div>
@@ -344,8 +339,8 @@ export default function ChatPage() {
               
               {isLoading && (
                 <div className="flex gap-4 justify-start">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1">
-                    <Sparkles className="w-5 h-5 text-[#DC2626] animate-pulse" />
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1 p-1.5">
+                    <img src="/mooring-logo.svg" alt="Mooring" className="w-full h-full object-contain animate-pulse" />
                   </div>
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
@@ -363,7 +358,7 @@ export default function ChatPage() {
             <div className="max-w-2xl mx-auto">
               <div className="relative">
                 <input
-                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-5 pr-14 py-3.5 text-sm placeholder-gray-400 text-gray-900 focus:bg-white focus:border-[#DC2626] focus:ring-1 focus:ring-[#DC2626] transition-all duration-150"
+                  className="w-full bg-white border border-[#E5E7EB] rounded-2xl pl-5 pr-14 py-3.5 text-sm placeholder-gray-400 text-gray-900 focus:bg-white focus:border-[#DC2626] focus:ring-1 focus:ring-[#DC2626] focus:shadow-sm transition-all duration-150"
                   placeholder="Ask what you're looking for..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -371,7 +366,11 @@ export default function ChatPage() {
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#DC2626] disabled:opacity-30 transition-colors duration-150 p-1.5"
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-all duration-150 ${
+                    input.trim() 
+                      ? 'text-[#DC2626] hover:text-[#EF4444]' 
+                      : 'text-gray-300'
+                  }`}
                   onClick={sendMessage}
                   disabled={isLoading || conversationComplete || !input.trim()}
                 >
@@ -384,16 +383,17 @@ export default function ChatPage() {
 
         {/* Matches Panel */}
         <div className="w-80 flex flex-col border-l border-gray-100 bg-gray-50/30">
-          <div className="px-6 py-4 border-b border-gray-100">
+          <div className="px-6 py-4 border-b border-[#F1F3F5]">
             <h3 className="text-sm font-semibold text-gray-900">Matches</h3>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">
             {currentMatches.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
-                  <Search className="w-12 h-12 text-gray-300" />
+              <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                <div className="w-36 h-36 rounded-full bg-gray-100 flex items-center justify-center mb-6">
+                  <Search className="w-14 h-14 text-gray-300" />
                 </div>
-                <p className="text-sm text-gray-500 max-w-xs">Start a conversation to see matches</p>
+                <p className="text-sm text-gray-500 max-w-sm mb-1">Start a conversation to see matches</p>
+                <p className="text-xs text-gray-400">Describe what you're looking for and I'll find perfect matches</p>
               </div>
             ) : (
               currentMatches.map((match) => (
