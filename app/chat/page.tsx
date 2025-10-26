@@ -287,7 +287,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+    <div className="min-h-screen bg-[#FAFAFA]">
       {/* Navbar */}
       <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20 sticky top-0 z-50 pt-4">
         <div className="max-w-7xl mx-auto px-6">
@@ -317,9 +317,9 @@ export default function ChatPage() {
           <p className="text-base text-stone-500">Ask me what you're looking for</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-6" style={{ minHeight: 'calc(100vh - 300px)' }}>
+        <div className="flex gap-0" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-md flex flex-col overflow-hidden">
+          <div className="w-1/2 bg-white rounded-l-2xl border border-r-0 border-gray-200 shadow-md flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0 bg-gray-50/20">
               {messages.map((message) => (
                 <div
@@ -327,10 +327,10 @@ export default function ChatPage() {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] px-4 py-2.5 rounded-xl shadow ${
+                    className={`max-w-[80%] px-4 py-3 rounded-lg ${
                       message.role === 'user'
-                        ? 'bg-gray-900 text-white shadow-gray-900/20'
-                        : 'bg-white text-gray-800 border border-gray-200 shadow-sm'
+                        ? 'bg-gray-900 text-white shadow-sm'
+                        : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
                     }`}
                   >
                     <div 
@@ -359,7 +359,7 @@ export default function ChatPage() {
             <div className="border-t border-gray-200 px-6 py-4 bg-white">
               <div className="flex space-x-3">
                 <input
-                  className="flex-1 border border-gray-300 bg-white rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm placeholder-gray-400 text-gray-900 transition-all"
+                  className="flex-1 border border-gray-300 bg-white rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-red-600 focus:border-red-600 text-sm placeholder-gray-400 text-gray-900 transition-all"
                   placeholder={conversationComplete ? "Start a new chat" : "Ask about collaborators..."}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -367,7 +367,7 @@ export default function ChatPage() {
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="bg-teal-600 text-white px-5 py-2.5 rounded-xl hover:bg-teal-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="bg-red-600 text-white px-5 py-2.5 rounded-xl hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   onClick={sendMessage}
                   disabled={isLoading || conversationComplete}
                 >
@@ -377,23 +377,20 @@ export default function ChatPage() {
             </div>
           </div>
 
+          {/* Vertical Divider */}
+          <div className="w-[1px] bg-gray-200"></div>
+
           {/* Right: Matches */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-md flex flex-col overflow-hidden">
+          <div className="w-1/2 bg-white rounded-r-2xl border border-l-0 border-gray-200 shadow-md flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
               <h3 className="text-base font-semibold text-stone-900">Matches</h3>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 min-h-0">
               {currentMatches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-16 px-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-teal-50 to-teal-100 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                    <Search className="w-10 h-10 text-teal-600" />
-                  </div>
-                  <div className="text-center max-w-xs">
-                    <p className="text-stone-900 font-semibold text-base mb-2">No matches yet</p>
-                    <p className="text-stone-600 text-sm leading-relaxed">Start a conversation to see potential collaborators</p>
-                    <p className="text-stone-500 text-xs mt-3 italic">I'll suggest relevant people from the Roux network based on your needs</p>
-                  </div>
+                <div className="flex flex-col items-center justify-center h-full py-20 px-4">
+                  <Search className="w-12 h-12 text-gray-300 mb-4" />
+                  <p className="text-gray-500 text-sm">Start a conversation to see potential matches</p>
                 </div>
               ) : (
                 currentMatches.map((match) => (
@@ -447,7 +444,7 @@ export default function ChatPage() {
                     className={`flex-1 flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold transition-all active:scale-95 shadow-sm ${
                       savedProfiles.has(match.profile.id)
                         ? 'bg-green-50 text-green-700 cursor-not-allowed'
-                        : 'bg-teal-600 text-white hover:bg-teal-700 hover:shadow-md'
+                        : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-md'
                     }`}
                   >
                     <Heart className="w-4 h-4 mr-2" />
