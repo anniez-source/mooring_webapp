@@ -330,7 +330,7 @@ export default function ChatPage() {
                     className={`max-w-[80%] px-4 py-3 ${
                       message.role === 'user'
                         ? 'bg-gray-900 text-white rounded-lg'
-                        : 'text-gray-900'
+                        : 'bg-[#F9FAFB] text-gray-900 rounded-lg'
                     }`}
                   >
                     <div 
@@ -356,7 +356,7 @@ export default function ChatPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-gray-200 bg-white px-8 py-4">
+            <div className="border-t border-gray-200 bg-white px-8 py-6">
               <div className="flex space-x-3">
                 <input
                   className="flex-1 border border-gray-200 bg-white rounded-lg px-4 py-2.5 focus:ring-1 focus:ring-[#DC2626] focus:border-[#DC2626] text-sm placeholder-gray-400 text-gray-900 transition-all"
@@ -367,7 +367,7 @@ export default function ChatPage() {
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="border border-[#DC2626] text-[#DC2626] px-4 py-2.5 rounded-lg hover:bg-[#DC2626] hover:text-white active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-gray-100 text-gray-600 px-4 py-2.5 rounded-lg hover:bg-[#DC2626] hover:text-white active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={sendMessage}
                   disabled={isLoading || conversationComplete}
                 >
@@ -378,7 +378,7 @@ export default function ChatPage() {
           </div>
 
           {/* Vertical Divider */}
-          <div className="w-[1px] bg-gray-200"></div>
+          <div className="w-px bg-gray-300"></div>
 
           {/* Right: Matches */}
           <div className="w-1/2 bg-white flex flex-col overflow-hidden">
@@ -389,7 +389,7 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4 min-h-0">
               {currentMatches.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-20">
-                  <p className="text-gray-400 text-sm">Start a conversation to see potential matches</p>
+                  <p className="text-gray-500 text-sm font-medium">Start a conversation to see potential matches</p>
                 </div>
               ) : (
                 currentMatches.map((match) => (
