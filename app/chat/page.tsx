@@ -71,7 +71,7 @@ export default function ChatPage() {
     setMessages([{
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm here to help you find collaborators in the Roux network. What kind of expertise or help are you looking for?",
+      content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise, cofounder, or connection do you need?",
       timestamp: new Date()
     }]);
   }, [router]);
@@ -126,7 +126,7 @@ export default function ChatPage() {
     setMessages([{
       id: '1',
       role: 'assistant',
-      content: "Hi! I'm here to help you find collaborators in the Roux network. What kind of expertise or help are you looking for?",
+      content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise, cofounder, or connection do you need?",
       timestamp: new Date()
     }]);
     setCurrentMatches([]);
