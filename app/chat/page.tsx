@@ -394,7 +394,7 @@ export default function ChatPage() {
               <h3 className="text-base font-semibold text-gray-900">Matches</h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4 min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {currentMatches.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-20 px-8">
                   <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center mb-6 animate-pulse">
@@ -405,7 +405,7 @@ export default function ChatPage() {
                 </div>
               ) : (
                 currentMatches.map((match) => (
-                  <div key={match.profile.id} className="group py-4 border-b border-gray-100 hover:bg-gray-50/50 transition-colors -mx-4 px-4">
+                  <div key={match.profile.id} className="group py-4 px-8 border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                         {match.profile.name.charAt(0)}
