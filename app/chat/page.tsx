@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { useUser, useAuth } from '@clerk/nextjs';
+import { SignOutButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search } from 'lucide-react';
 
@@ -408,6 +409,9 @@ export default function ChatPage() {
               <Link href="/chat" className="text-sm text-gray-900 font-medium">Find People</Link>
               <Link href="/saved" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Saved</Link>
               <Link href="/profile" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Profile</Link>
+              <SignOutButton>
+                <button className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Log Out</button>
+              </SignOutButton>
             </div>
           </div>
         </div>
