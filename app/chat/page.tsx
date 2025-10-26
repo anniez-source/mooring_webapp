@@ -358,7 +358,7 @@ export default function ChatPage() {
             <div className="max-w-2xl mx-auto">
               <div className="relative">
                 <input
-                  className="w-full bg-white border border-[#E5E7EB] rounded-2xl pl-5 pr-14 py-3.5 text-sm placeholder-gray-400 text-gray-900 focus:bg-white focus:border-[#DC2626] focus:ring-1 focus:ring-[#DC2626] focus:shadow-sm transition-all duration-150"
+                  className="w-full bg-white rounded-2xl pl-5 pr-14 py-3.5 text-sm placeholder-gray-400 text-gray-900 focus:ring-2 focus:ring-[#DC2626]/20 transition-all duration-150"
                   placeholder="Ask what you're looking for..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
