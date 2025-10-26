@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
-    const { personId, conversationId, source = 'chat' } = await req.json();
+    const { profileId, sourceDetail, source = 'chat' } = await req.json();
 
     // For now, we'll use a placeholder user_id since we don't have auth
     const userId = 'temp-user-id';
@@ -13,10 +13,11 @@ export async function POST(req: NextRequest) {
       .from('saved_contacts')
       .insert({
         user_id: userId,
-        saved_person_id: personId,
+        profile_id: profileId,
+        conversation_id: sourceDetail,
         source: source,
-        source_detail: conversationId
-      });
+      })
+      .select();
 
     if (error) {
       console.error('Error saving collaborator:', error);
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ 
       success: true,
-      message: 'Collaborator saved successfully' 
+      data 
     });
 
   } catch (error: any) {

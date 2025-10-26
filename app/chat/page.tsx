@@ -259,7 +259,6 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: 'current_user_id',
           profileId: profile.id,
           source: 'chat',
           sourceDetail: messages[messages.length - 1]?.id,
@@ -267,12 +266,14 @@ export default function ChatPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save collaborator');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save collaborator');
       }
 
       setSavedProfiles(prev => new Set([...prev, profile.id]));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving collaborator:', error);
+      alert(error.message || 'Failed to save collaborator');
     }
   };
 
