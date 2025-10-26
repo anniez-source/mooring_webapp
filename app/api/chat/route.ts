@@ -165,8 +165,11 @@ export async function POST(req: NextRequest) {
         try {
           for await (const chunk of stream) {
             if (chunk.type === 'content_block_delta') {
-              const text = chunk.delta.text;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+              // Handle both text and input types
+              const text = 'text' in chunk.delta ? chunk.delta.text : '';
+              if (text) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+              }
             }
           }
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
