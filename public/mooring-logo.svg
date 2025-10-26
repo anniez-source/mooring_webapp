@@ -1,0 +1,19 @@
+<svg width="80" height="120" viewBox="23 3 54 114" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main buoy body -->
+  <rect x="25" y="10" width="50" height="100" rx="8" fill="#DC2626"/>
+  
+  <!-- 3D shadow layer -->
+  <rect x="27" y="12" width="46" height="96" rx="7" fill="#EF4444"/>
+  
+  <!-- Horizontal teal stripe band -->
+  <rect id="stripe" x="23" y="50" width="54" height="16" rx="3" fill="#0D9488"/>
+  
+  <!-- Top dark circle -->
+  <circle cx="50" cy="15" r="6" fill="#1F2937"/>
+  
+  <!-- Hook/loop at top -->
+  <path d="M50 9 Q48 3 56 3" stroke="#1F2937" stroke-width="5" fill="none" stroke-linecap="round"/>
+  
+  <!-- Bottom dark circle -->
+  <circle cx="50" cy="105" r="6" fill="#1F2937"/>
+</svg>
