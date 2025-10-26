@@ -226,8 +226,10 @@ export default function ChatPage() {
         )
       );
 
-      // Mark conversation as complete
-      setConversationComplete(true);
+      // Mark conversation as complete only if we found matches
+      if (matchCards.length > 0) {
+        setConversationComplete(true);
+      }
 
     } catch (error: any) {
       console.error('Error sending message:', error);
