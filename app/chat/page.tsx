@@ -102,6 +102,12 @@ export default function ChatPage() {
           } else {
             console.log('User synced to Supabase:', newUser);
           }
+        } else {
+          // Check if profile is completed
+          if (!existingUser.completed_at) {
+            router.push('/onboard');
+            return;
+          }
         }
       } catch (error) {
         console.error('Error syncing user:', error);
