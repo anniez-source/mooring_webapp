@@ -319,18 +319,18 @@ export default function ChatPage() {
 
         <div className="flex gap-0" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
-          <div className="w-1/2 bg-white rounded-l-2xl border border-r-0 border-gray-200 shadow-md flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0 bg-gray-50/20">
+          <div className="w-1/2 bg-gray-50/30 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-4 min-h-0">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] px-4 py-3 rounded-lg ${
+                    className={`max-w-[80%] px-4 py-3 ${
                       message.role === 'user'
-                        ? 'bg-gray-900 text-white shadow-sm'
-                        : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
+                        ? 'bg-gray-900 text-white rounded-lg'
+                        : 'text-gray-900'
                     }`}
                   >
                     <div 
@@ -356,10 +356,10 @@ export default function ChatPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-gray-200 px-6 py-4 bg-white">
+            <div className="border-t border-gray-200 bg-white px-8 py-4">
               <div className="flex space-x-3">
                 <input
-                  className="flex-1 border border-gray-300 bg-white rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#DC2626] focus:border-[#DC2626] text-sm placeholder-gray-400 text-gray-900 transition-all"
+                  className="flex-1 border border-gray-200 bg-white rounded-lg px-4 py-2.5 focus:ring-1 focus:ring-[#DC2626] focus:border-[#DC2626] text-sm placeholder-gray-400 text-gray-900 transition-all"
                   placeholder={conversationComplete ? "Start a new chat" : "Ask about collaborators..."}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -367,7 +367,7 @@ export default function ChatPage() {
                   disabled={isLoading || conversationComplete}
                 />
                 <button
-                  className="bg-[#DC2626] text-white px-5 py-2.5 rounded-xl hover:bg-[#EF4444] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="border border-[#DC2626] text-[#DC2626] px-4 py-2.5 rounded-lg hover:bg-[#DC2626] hover:text-white active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={sendMessage}
                   disabled={isLoading || conversationComplete}
                 >
@@ -381,20 +381,19 @@ export default function ChatPage() {
           <div className="w-[1px] bg-gray-200"></div>
 
           {/* Right: Matches */}
-          <div className="w-1/2 bg-white rounded-r-2xl border border-l-0 border-gray-200 shadow-md flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
-              <h3 className="text-base font-semibold text-stone-900">Matches</h3>
+          <div className="w-1/2 bg-white flex flex-col overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-200 flex-shrink-0">
+              <h3 className="text-base font-semibold text-gray-900">Matches</h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 min-h-0">
+            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4 min-h-0">
               {currentMatches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full py-20 px-4">
-                  <Search className="w-12 h-12 text-gray-300 mb-4" />
-                  <p className="text-gray-500 text-sm">Start a conversation to see potential matches</p>
+                <div className="flex flex-col items-center justify-center h-full py-20">
+                  <p className="text-gray-400 text-sm">Start a conversation to see potential matches</p>
                 </div>
               ) : (
                 currentMatches.map((match) => (
-                  <div key={match.profile.id} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                  <div key={match.profile.id} className="border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-all">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900 text-base">{match.profile.name}</h3>
