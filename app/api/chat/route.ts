@@ -89,9 +89,11 @@ You are professional, thoughtful, and focused solely on creating meaningful conn
 
 export async function POST(req: NextRequest) {
   try {
-    // Check for API key
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.error('ANTHROPIC_API_KEY is not set in environment variables');
+    // Check for API key with trimmed value
+    const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+    
+    if (!apiKey || apiKey.length < 10) {
+      console.error('ANTHROPIC_API_KEY is not set or invalid. Length:', apiKey?.length || 0);
       return NextResponse.json({ 
         error: 'Anthropic API key is invalid or not set.' 
       }, { status: 401 });
@@ -99,7 +101,7 @@ export async function POST(req: NextRequest) {
 
     // Initialize Anthropic client inside the handler
     const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: apiKey,
     });
 
     const { message, conversationHistory, conversationId } = await req.json();
