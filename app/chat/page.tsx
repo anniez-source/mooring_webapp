@@ -317,7 +317,7 @@ export default function ChatPage() {
           <p className="text-base text-stone-500">Ask me what you're looking for</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-[1px]" style={{ minHeight: 'calc(100vh - 300px)' }}>
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-[1px]" style={{ minHeight: 'calc(100vh - 300px)' }}>
           {/* Left: Chat */}
           <div className="bg-white rounded-l-2xl border border-gray-200 border-r-0 shadow-md flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-0 bg-gray-50/20">
