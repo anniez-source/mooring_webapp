@@ -46,11 +46,11 @@ User B (Nexus Maine + Test Environment) queries users
 const { data } = await supabase.from('profiles').select('*');
 
 // RLS filters to:
-// "Show me profiles from users in my organizations, where opted_in = true"
+// "Show me my own profile + opted-in profiles from my organizations"
 ```
 
 **Workflow:**
-- ✅ **SELECT**: Can view profiles from their organization(s) - **needed for AI matching**
+- ✅ **SELECT**: Can view their own profile + opted-in profiles from their organization(s)
 - ✅ **INSERT**: Can create their own profile (onboarding)
 - ✅ **UPDATE**: Can update their own profile only
 - ❌ **DELETE**: Not allowed
@@ -61,12 +61,18 @@ User A searches for a technical cofounder
 → AI receives: All opted-in profiles from User A's organizations
 → AI matches: Only shows relevant people from same org(s)
 → User A sees: Name, background, expertise, looking_for, open_to
+→ User A CANNOT see: Non-opted-in profiles (database enforced!)
 → User A CANNOT see: Profiles from other organizations
+
+User B (opted_in = false) queries profiles
+→ Sees: Only their own profile
+→ Doesn't see: Any other profiles (not visible for matching)
 ```
 
 **Privacy Note:** 
-- Users can see each other's profiles **within the same org** (intentional - needed for matching)
-- If you want profiles completely private, you'd need to change the policy (see SECURITY_GUIDE.md)
+- ✅ **Opted-in users**: Visible to others in same org (needed for AI matching)
+- ❌ **Opted-out users**: Hidden from everyone except themselves
+- ✅ **Own profile**: Always visible to yourself (for profile page)
 
 ---
 
@@ -396,7 +402,9 @@ RESULT: ✅ Attack fails - RLS protects all data
 | Data Type | Who Can See It | Privacy Level |
 |-----------|----------------|---------------|
 | **User records** | Same org members | 🟡 Shared within org |
-| **Profiles** | Same org members (opted-in only) | 🟡 Shared within org |
+| **Profiles (opted-in)** | Same org members | 🟡 Shared within org |
+| **Profiles (opted-out)** | Owner only | 🟢 Completely private |
+| **Own profile** | Always visible to self | 🟢 Always accessible |
 | **Chat sessions** | Owner only | 🟢 Completely private |
 | **Chat messages** | Owner only | 🟢 Completely private |
 | **Saved contacts** | Owner only | 🟢 Completely private |

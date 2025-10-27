@@ -59,18 +59,29 @@ DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 
 -- Allow users to view profiles from their organizations
+-- Users can always see their own profile, but can only see others' if opted_in = true
 CREATE POLICY "Users can view profiles in their orgs" ON profiles
   FOR SELECT
   TO authenticated
   USING (
-    user_id IN (
-      SELECT om.user_id
-      FROM organization_members om
-      WHERE om.org_id IN (
-        SELECT org_id 
-        FROM organization_members 
-        WHERE user_id = (
-          SELECT user_id FROM users WHERE clerk_user_id = auth.jwt()->>'sub'
+    -- Can always view own profile
+    user_id = (
+      SELECT user_id FROM users WHERE clerk_user_id = auth.jwt()->>'sub'
+    )
+    OR
+    -- Can view other profiles in same org(s) ONLY if opted_in = true
+    (
+      opted_in = true
+      AND
+      user_id IN (
+        SELECT om.user_id
+        FROM organization_members om
+        WHERE om.org_id IN (
+          SELECT org_id 
+          FROM organization_members 
+          WHERE user_id = (
+            SELECT user_id FROM users WHERE clerk_user_id = auth.jwt()->>'sub'
+          )
         )
       )
     )
