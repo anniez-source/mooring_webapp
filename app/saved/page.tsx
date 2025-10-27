@@ -110,7 +110,7 @@ export default function SavedContactsPage() {
       }
 
       // Combine saved contacts with profile data
-      const transformedContacts: SavedContact[] = savedData
+      const transformedContacts = savedData
         .map((item: any) => {
           const profile = profilesData?.find(p => p.user_id === item.saved_profile_id);
           if (!profile) return null;
