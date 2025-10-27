@@ -28,7 +28,8 @@ export default function UserProfileDropdown() {
     console.log('[UserProfileDropdown] User data:', {
       firstName: user?.firstName,
       fullName: user?.fullName,
-      emailAddress: user?.primaryEmailAddress?.emailAddress
+      emailAddress: user?.primaryEmailAddress?.emailAddress,
+      imageUrl: user?.imageUrl
     });
     
     if (user?.firstName) {
@@ -54,7 +55,7 @@ export default function UserProfileDropdown() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
-        {user.imageUrl && !user.imageUrl.includes('clerk.com/default') ? (
+        {user.hasImage && user.imageUrl && !user.imageUrl.includes('default') ? (
           <img
             src={user.imageUrl}
             alt={getUserName()}
