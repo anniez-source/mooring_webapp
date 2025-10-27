@@ -2,11 +2,11 @@
 -- Run this in Supabase SQL Editor
 
 -- First, let's get or create a default organization
-INSERT INTO organizations (org_id, name, description)
+INSERT INTO organizations (org_id, name, type)
 VALUES (
   '00000000-0000-0000-0000-000000000001',
   'Test Organization',
-  'Default organization for testing'
+  'test'
 )
 ON CONFLICT (org_id) DO NOTHING;
 
