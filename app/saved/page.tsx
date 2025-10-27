@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { createClient } from '@supabase/supabase-js';
-import { SignOutButton } from '@clerk/nextjs';
+import UserProfileDropdown from '../components/UserProfileDropdown';
 import { 
   Linkedin, 
   Mail, 
@@ -238,9 +238,7 @@ export default function SavedContactsPage() {
               <Link href="/chat" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Find People</Link>
               <Link href="/saved" className="text-sm text-stone-900 font-medium">Saved</Link>
               <Link href="/profile" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Profile</Link>
-              <SignOutButton>
-                <button className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Sign Out</button>
-              </SignOutButton>
+              <UserProfileDropdown />
             </div>
           </div>
         </div>

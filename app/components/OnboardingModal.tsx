@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useUser, useAuth } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useSupabaseClient } from '@/lib/supabase-client';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function OnboardingModal() {
   const { user, isLoaded } = useUser();
-  const { getToken } = useAuth();
-  const supabase = useSupabaseClient();
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [isChecking, setIsChecking] = useState(true);

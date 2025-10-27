@@ -4,10 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { SignOutButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search } from 'lucide-react';
 import OnboardingModal from '../components/OnboardingModal';
+import UserProfileDropdown from '../components/UserProfileDropdown';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -537,9 +537,7 @@ export default function ChatPage() {
               <Link href="/chat" className="text-sm text-stone-900 font-medium">Find People</Link>
               <Link href="/saved" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Saved</Link>
               <Link href="/profile" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Profile</Link>
-              <SignOutButton>
-                <button className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Log Out</button>
-              </SignOutButton>
+              <UserProfileDropdown />
             </div>
           </div>
         </div>
