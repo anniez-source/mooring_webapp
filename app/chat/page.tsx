@@ -526,7 +526,7 @@ export default function ChatPage() {
       <OnboardingModal />
       <div className="h-screen flex flex-col bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
         {/* Navbar */}
-        <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20">
+        <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20 relative z-50">
         <div className="max-w-6xl mx-auto px-8">
           <div className="flex justify-between h-16 items-center">
             <Link href="/" className="flex items-center gap-2">

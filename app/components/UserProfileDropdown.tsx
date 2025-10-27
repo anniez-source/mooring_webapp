@@ -61,7 +61,7 @@ export default function UserProfileDropdown() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-stone-200 shadow-lg z-50" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg border border-stone-200 shadow-lg z-[100]" style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}>
           {/* User Info */}
           <div className="px-4 py-3 border-b border-stone-100">
             <p className="text-sm font-medium text-stone-900">{getUserName()}</p>
