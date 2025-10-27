@@ -39,7 +39,6 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className={`${inter.variable} ${plusJakartaSans.variable} ${ibmPlexSans.variable}`}>
         <body className="font-inter antialiased">
-          <OnboardingModal />
           {children}
         </body>
       </html>

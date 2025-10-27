@@ -7,6 +7,7 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import { SignOutButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search } from 'lucide-react';
+import OnboardingModal from '../components/OnboardingModal';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -521,9 +522,11 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
-      {/* Navbar */}
-      <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20">
+    <>
+      <OnboardingModal />
+      <div className="h-screen flex flex-col bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        {/* Navbar */}
+        <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20">
         <div className="max-w-6xl mx-auto px-8">
           <div className="flex justify-between h-16 items-center">
             <Link href="/" className="flex items-center gap-2">
@@ -745,6 +748,7 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
