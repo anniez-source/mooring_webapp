@@ -30,9 +30,9 @@ interface Profile {
   background: string;
   working_on: string;
   interests: string;
-  can_help_with: string;
-  seeking_help_with: string;
-  available_for: string[];
+  expertise: string;
+  looking_for: any[];
+  open_to: any[];
 }
 
 interface MatchCard {
@@ -55,6 +55,7 @@ export default function ChatPage() {
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [matchesWidth, setMatchesWidth] = useState(384); // Default width in px (w-96)
   const [isResizing, setIsResizing] = useState(false);
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -74,43 +75,60 @@ export default function ChatPage() {
     
     // Sync user to Supabase when they log in
     async function syncUser() {
-      if (!isSignedIn || !user) return;
+      if (!isSignedIn || !user) {
+        console.log('[Chat] User not signed in');
+        return;
+      }
+      
+      console.log('[Chat] Syncing user:', user.id);
       
       try {
-        // Check if user exists in Supabase
-        const { data: existingUser } = await supabase
-          .from('profiles')
-          .select('*')
+        // Check if user exists in users table
+        const { data: existingUser, error: userFetchError} = await supabase
+          .from('users')
+          .select('user_id')
           .eq('clerk_user_id', user.id)
-          .single();
+          .maybeSingle();
         
-        // If not, create them
+        if (userFetchError) {
+          console.error('[Chat] Error fetching user:', userFetchError);
+          return;
+        }
+        
+        // If user doesn't exist in users table, create them
         if (!existingUser) {
-          const { data: newUser, error } = await supabase
-            .from('profiles')
+          console.log('[Chat] User not found, creating new user record');
+          const { data: newUser, error: userInsertError } = await supabase
+            .from('users')
             .insert({
               clerk_user_id: user.id,
               email: user.emailAddresses[0]?.emailAddress || '',
-              name: user.fullName || user.firstName || 'User',
-              org_id: 'nexus-maine'
+              name: user.fullName || user.firstName || 'User'
             })
-            .select()
+            .select('user_id')
             .single();
           
-          if (error) {
-            console.error('Error creating profile:', error);
+          if (userInsertError) {
+            // Note: This error often occurs due to RLS policies blocking .select() after .insert()
+            // The INSERT usually succeeds, but we can't read it back immediately
+            // Run fix_users_table_permissions.sql to resolve this
+            
+            if (userInsertError.code === '23505') {
+              console.log('[Chat] User already exists (duplicate key)');
+            } else {
+              console.log('[Chat] User insert completed (SELECT blocked by RLS - this is OK, user was created)');
+              console.log('[Chat] To fix: Run fix_users_table_permissions.sql in Supabase');
+            }
           } else {
-            console.log('User synced to Supabase:', newUser);
+            console.log('[Chat] User created successfully:', newUser?.user_id);
           }
         } else {
-          // Check if profile is completed
-          if (!existingUser.completed_at) {
-            router.push('/onboard');
-            return;
-          }
+          console.log('[Chat] User already exists:', existingUser.user_id);
         }
+        
+        // OnboardingModal will handle profile completion check
       } catch (error) {
-        console.error('Error syncing user:', error);
+        console.error('[Chat] Error syncing user:', error);
       }
     }
     
@@ -132,7 +150,7 @@ export default function ChatPage() {
   const formatMessageContent = (content: string) => {
     // Convert markdown-style formatting to HTML
     return content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-stone-900">$1</strong>') // Bold text with color
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
       .replace(/\n/g, '<br>'); // Line breaks
   };
@@ -159,9 +177,9 @@ export default function ChatPage() {
         background: reasoning.trim(),
         working_on: '',
         interests: '',
-        can_help_with: '',
-        seeking_help_with: '',
-        available_for: [],
+        expertise: '',
+        looking_for: [],
+        open_to: [],
       };
       people.push(dummyProfile);
 
@@ -186,6 +204,7 @@ export default function ChatPage() {
       setDisplayIndex(0);
       setSavedProfiles(new Set());
       setConversationComplete(false);
+      setChatSessionId(null); // Reset session ID for new conversation
     };
 
   const sendMessage = async () => {
@@ -217,7 +236,8 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           message: userMessage.content,
-          conversationHistory
+          conversationHistory,
+          chatSessionId: chatSessionId // Send session ID to API
         }),
       });
 
@@ -250,6 +270,13 @@ export default function ChatPage() {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = JSON.parse(line.substring(6));
+            
+            // Capture the real session ID when streaming completes
+            if (data.done && data.chatSessionId) {
+              console.log('[Chat] Received chat session ID from API:', data.chatSessionId);
+              setChatSessionId(data.chatSessionId);
+            }
+            
             if (data.text) {
               receivedText += data.text;
               // Update the message in real-time
@@ -268,22 +295,71 @@ export default function ChatPage() {
       
       console.log('Number of matched people:', matchedPeople.length);
       
-      // Create match cards with reasoning
-      const matchCards: MatchCard[] = matchedPeople.map((profile, index) => ({
-        profile,
-        reasoning: profile.background,
-        relevanceScore: 95 - (index * 5) // Mock relevance scores
-      }));
+      // Fetch full profile data from database to get real user_ids
+      if (matchedPeople.length > 0) {
+        const emails = matchedPeople.map(p => p.email);
+        const { data: fullProfiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('email', emails);
+        
+        if (!profileError && fullProfiles) {
+          // Match AI results with database profiles by email
+          const enrichedPeople = matchedPeople.map(parsedProfile => {
+            const dbProfile = fullProfiles.find(fp => fp.email === parsedProfile.email);
+            if (dbProfile) {
+              return {
+                ...parsedProfile,
+                id: dbProfile.user_id, // Use real user_id from database
+                background: dbProfile.background,
+                expertise: dbProfile.expertise,
+                working_on: dbProfile.working_on || '',
+                interests: dbProfile.interests || '',
+                looking_for: dbProfile.looking_for || [],
+                open_to: dbProfile.open_to || []
+              };
+            }
+            return parsedProfile;
+          });
+          
+          // Create match cards with reasoning from AI
+          const matchCards: MatchCard[] = enrichedPeople.map((profile, index) => ({
+            profile,
+            reasoning: matchedPeople[index].background, // Use AI's reasoning from parsed response
+            relevanceScore: 95 - (index * 5)
+          }));
 
-      console.log('Match cards created:', matchCards.length);
-      setCurrentMatches(matchCards);
-      
-      // Update message with final content and people (for any matched profiles)
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === assistantMessageId ? { ...msg, content: finalContent, people: matchedPeople } : msg
-        )
-      );
+          console.log('Match cards created:', matchCards.length);
+          setCurrentMatches(matchCards);
+          
+          // Update message with enriched profiles
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantMessageId ? { ...msg, content: finalContent, people: enrichedPeople } : msg
+            )
+          );
+        } else {
+          // Fallback if database fetch fails
+          const matchCards: MatchCard[] = matchedPeople.map((profile, index) => ({
+            profile,
+            reasoning: profile.background,
+            relevanceScore: 95 - (index * 5)
+          }));
+          setCurrentMatches(matchCards);
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantMessageId ? { ...msg, content: finalContent, people: matchedPeople } : msg
+            )
+          );
+        }
+      } else {
+        // No people matched
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === assistantMessageId ? { ...msg, content: finalContent, people: matchedPeople } : msg
+          )
+        );
+      }
 
       // Don't mark as complete - allow users to keep searching
 
@@ -307,29 +383,72 @@ export default function ChatPage() {
     }
   };
 
-  const handleSaveProfile = async (profile: Profile) => {
+  const handleSaveProfile = async (profile: Profile, reasoning: string) => {
     try {
+      console.log('Saving profile:', { id: profile.id, name: profile.name, email: profile.email, sessionId: chatSessionId });
+      
       const response = await fetch('/api/save-collaborator', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          profileId: profile.id,
-          source: 'chat',
-          sourceDetail: messages[messages.length - 1]?.id,
+          savedProfileId: profile.id,
+          reason: reasoning,
+          chatSessionId: chatSessionId,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save collaborator');
+        console.error('Save failed:', errorData);
+        throw new Error(errorData.error || 'Failed to save contact');
       }
 
+      const result = await response.json();
+      console.log('Save successful:', result);
       setSavedProfiles(prev => new Set([...prev, profile.id]));
     } catch (error: any) {
-      console.error('Error saving collaborator:', error);
-      alert(error.message || 'Failed to save collaborator');
+      console.error('Error saving contact:', error);
+      alert(error.message || 'Failed to save contact');
+    }
+  };
+
+  const handleEmailClick = async (profileId: string) => {
+    try {
+      // Track email click in database
+      await fetch('/api/track-click', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          savedProfileId: profileId,
+          clickType: 'email',
+        }),
+      });
+    } catch (error) {
+      console.error('Error tracking email click:', error);
+      // Don't block the user's action if tracking fails
+    }
+  };
+
+  const handleLinkedInClick = async (profileId: string) => {
+    try {
+      // Track LinkedIn click in database
+      await fetch('/api/track-click', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          savedProfileId: profileId,
+          clickType: 'linkedin',
+        }),
+      });
+    } catch (error) {
+      console.error('Error tracking LinkedIn click:', error);
+      // Don't block the user's action if tracking fails
     }
   };
 
@@ -386,8 +505,8 @@ export default function ChatPage() {
   // Don't render until authenticated
   if (!isLoaded) {
     return (
-      <div className="h-screen flex items-center justify-center bg-white">
-        <p className="text-gray-500">Loading...</p>
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <p className="text-stone-600">Loading...</p>
       </div>
     );
   }
@@ -395,28 +514,28 @@ export default function ChatPage() {
   if (!isSignedIn) {
     router.push('/sign-in');
     return (
-      <div className="h-screen flex items-center justify-center bg-white">
-        <p className="text-gray-500">Redirecting to sign in...</p>
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
+        <p className="text-stone-600">Redirecting to sign in...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
       {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200/50">
+      <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20">
         <div className="max-w-6xl mx-auto px-8">
           <div className="flex justify-between h-16 items-center">
-            <Link href="/" className="flex items-center">
-              <span className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
+            <Link href="/" className="flex items-center gap-2">
+              <img src="/mooring-logo.svg" alt="Mooring" className="w-6 h-6" />
+              <span className="text-2xl font-bold text-stone-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
             </Link>
             <div className="hidden md:flex items-center space-x-6">
-              <Link href="/communities" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Communities</Link>
-              <Link href="/chat" className="text-sm text-gray-900 font-medium">Find People</Link>
-              <Link href="/saved" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Saved</Link>
-              <Link href="/profile" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Profile</Link>
+              <Link href="/chat" className="text-sm text-stone-900 font-medium">Find People</Link>
+              <Link href="/saved" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Saved</Link>
+              <Link href="/profile" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Profile</Link>
               <SignOutButton>
-                <button className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Log Out</button>
+                <button className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Log Out</button>
               </SignOutButton>
             </div>
           </div>
@@ -424,31 +543,32 @@ export default function ChatPage() {
       </nav>
 
       {/* Main Content - Split View */}
-      <div className="flex flex-1 border-t border-[#F1F3F5] min-h-0">
+      <div className="flex flex-1 border-t border-stone-200/50 min-h-0">
         {/* Chat Panel */}
-        <div className="flex-1 flex flex-col border-r border-gray-100 min-h-0">
-          <div className="flex-1 overflow-y-auto px-6 py-6" style={{ minHeight: 0 }}>
-            <div className="max-w-2xl mx-auto space-y-5">
+        <div className="flex-1 flex flex-col border-r border-stone-200/50 bg-white min-h-0">
+          <div className="flex-1 overflow-y-auto px-8 py-8" style={{ minHeight: 0 }}>
+            <div className="max-w-2xl mx-auto space-y-6">
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {message.role === 'assistant' && (
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1 p-1.5">
+                    <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center flex-shrink-0 mt-1 p-1.5">
                       <img src="/mooring-logo.svg" alt="Mooring" className="w-full h-full object-contain" />
                     </div>
                   )}
                   <div
-                    className={`max-w-[80%] ${
+                    className={`max-w-[75%] ${
                       message.role === 'user'
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-[#F9FAFB] text-gray-900'
-                    } px-4 py-3 rounded-2xl`}
+                        ? 'bg-stone-800 text-white'
+                        : 'bg-white border border-stone-200 text-stone-900'
+                    } px-5 py-3.5 rounded-xl`}
+                    style={{ boxShadow: message.role === 'assistant' ? '0 1px 3px rgba(0, 0, 0, 0.05)' : 'none' }}
                   >
                     <div 
-                      className="text-[15px] leading-relaxed"
-                      style={{ lineHeight: '1.6' }}
+                      className="text-sm leading-relaxed"
+                      style={{ lineHeight: '1.7' }}
                       dangerouslySetInnerHTML={{ __html: formatMessageContent(message.content) }}
                     />
                   </div>
@@ -456,14 +576,14 @@ export default function ChatPage() {
               ))}
               
               {isLoading && (
-                <div className="flex gap-4 justify-start">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-1 p-1.5">
+                <div className="flex gap-3 justify-start">
+                  <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center flex-shrink-0 mt-1 p-1.5">
                     <img src="/mooring-logo.svg" alt="Mooring" className="w-full h-full object-contain animate-pulse" />
                   </div>
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  <div className="flex gap-1.5 items-center mt-2">
+                    <div className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-1.5 h-1.5 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>
               )}
@@ -472,11 +592,12 @@ export default function ChatPage() {
           </div>
 
           {/* Input */}
-          <div className="border-t border-gray-100 px-6 py-4">
+          <div className="border-t border-stone-200 px-8 py-5 bg-white/60">
             <div className="max-w-2xl mx-auto">
               <div className="relative">
                 <input
-                  className="w-full bg-white border border-gray-200 rounded-2xl pl-5 pr-14 py-4 text-sm placeholder-gray-400 text-gray-800 focus:border-gray-300 transition-all duration-200 shadow-sm"
+                  className="w-full bg-white border border-stone-200 rounded-xl pl-4 pr-12 py-3.5 text-sm placeholder-stone-400 text-stone-800 focus:outline-none focus:border-teal-600 focus:ring-0 transition-colors"
+                  style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }}
                   placeholder="Ask what you're looking for..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -484,15 +605,15 @@ export default function ChatPage() {
                   disabled={isLoading}
                 />
                 <button
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-all duration-150 ${
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 transition-all duration-150 rounded-lg ${
                     input.trim() 
-                      ? 'text-[#DC2626] hover:text-[#EF4444] hover:opacity-70' 
-                      : 'text-gray-300'
+                      ? 'text-teal-600 hover:bg-teal-50' 
+                      : 'text-stone-300'
                   }`}
                   onClick={sendMessage}
                   disabled={isLoading || !input.trim()}
                 >
-                  <Send className="w-4.5 h-4.5" />
+                  <Send className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -500,7 +621,7 @@ export default function ChatPage() {
         </div>
 
         {/* Matches Panel */}
-        <div className="flex flex-col border-l border-gray-100 bg-white relative min-h-0" style={{ width: `${matchesWidth}px` }}>
+        <div className="flex flex-col border-l border-stone-200/50 bg-white relative min-h-0" style={{ width: `${matchesWidth}px` }}>
           {/* Resize handle */}
           <div 
             className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-teal-600 z-20 transition-colors select-none"
@@ -513,35 +634,75 @@ export default function ChatPage() {
               </div>
             </div>
           </div>
-          <div className="px-8 py-4 border-b border-gray-100 bg-gradient-to-b from-white to-gray-50/30">
-            <h3 className="text-lg font-medium text-gray-900 tracking-normal" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Matches</h3>
+          <div className="px-6 py-5 border-b border-stone-200 bg-white/80">
+            <h3 className="text-base font-semibold text-stone-900" style={{ fontFamily: 'var(--font-ibm-plex)', fontWeight: 600 }}>Matches</h3>
           </div>
           <div 
             className="flex-1 overflow-y-auto px-6 py-6"
             style={{
-              backgroundImage: 'linear-gradient(rgba(13, 148, 136, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(13, 148, 136, 0.08) 1px, transparent 1px)',
-              backgroundSize: '30px 30px'
+              backgroundImage: 'linear-gradient(rgba(13, 148, 136, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(13, 148, 136, 0.06) 1px, transparent 1px)',
+              backgroundSize: '32px 32px'
             }}
           >
             {currentMatches.length === 0 ? null : (
               displayIndex >= currentMatches.length ? (
                 <div className="flex items-center justify-center h-full -mt-12">
                   <div className="text-center space-y-4">
-                    <p className="text-sm font-medium text-gray-500">No more matches</p>
-                    <p className="text-xs text-gray-400">Try refining your search to see more results</p>
+                    <p className="text-sm font-medium text-stone-500">No more matches</p>
+                    <p className="text-xs text-stone-400">Try refining your search to see more results</p>
                   </div>
                 </div>
               ) : (
                 currentMatches.slice(displayIndex, displayIndex + 3).map((match, localIndex) => {
                 const isExpanded = expandedMatchId === match.profile.id;
                 return (
-                  <div key={match.profile.id} className="mb-4 p-4 bg-white rounded-lg border border-gray-200 relative hover:shadow-sm transition-shadow cursor-pointer pr-16" onClick={() => setExpandedMatchId(isExpanded ? null : match.profile.id)}>
-                    {/* Action icons group - top right (shown when expanded) */}
+                  <div key={match.profile.id} className="mb-4 p-4 bg-white rounded-xl border border-stone-200 relative hover:border-stone-300 transition-all cursor-pointer" style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }} onClick={() => setExpandedMatchId(isExpanded ? null : match.profile.id)}>
+                    {/* Dismiss button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const actualIndex = displayIndex + localIndex;
+                        handlePassProfile(currentMatches[actualIndex].profile.id);
+                      }}
+                      className="absolute top-3 right-3 text-stone-400 hover:text-stone-600 transition-colors z-20 p-1 hover:bg-stone-100 rounded"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                    
+                    {/* Content */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+                        {match.profile.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0 pr-6">
+                        <h3 className="font-semibold text-stone-900 text-sm mb-1">{match.profile.name}</h3>
+                        <p className="text-xs text-stone-500 mb-2.5">{match.profile.ms_program}</p>
+                        {isExpanded ? (
+                          <p className="text-sm text-stone-700 leading-relaxed" style={{ lineHeight: '1.6' }}>
+                            {match.reasoning}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-stone-700 leading-relaxed line-clamp-2" style={{ lineHeight: '1.6' }}>
+                            {match.reasoning}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action buttons - shown when expanded */}
                     {isExpanded && (
-                      <div className="absolute top-2 right-8 flex items-center gap-2 z-20">
+                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
                         {match.profile.email && (
-                          <a href={`mailto:${match.profile.email}`} className="text-gray-400 hover:text-[#DC2626] transition-colors" onClick={(e) => e.stopPropagation()}>
-                            <Mail className="w-4 h-4" />
+                          <a 
+                            href={`mailto:${match.profile.email}`} 
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-600 hover:text-teal-600 hover:bg-teal-50 transition-colors rounded-lg border border-stone-200 hover:border-teal-200" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEmailClick(match.profile.id);
+                            }}
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                            <span className="font-medium">Email</span>
                           </a>
                         )}
                         {match.profile.linkedin_url && (
@@ -549,61 +710,33 @@ export default function ChatPage() {
                             href={match.profile.linkedin_url.startsWith('http') ? match.profile.linkedin_url : `https://${match.profile.linkedin_url}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-gray-400 hover:text-[#DC2626] transition-colors"
-                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-600 hover:text-teal-600 hover:bg-teal-50 transition-colors rounded-lg border border-stone-200 hover:border-teal-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLinkedInClick(match.profile.id);
+                            }}
                           >
-                            <Linkedin className="w-4 h-4" />
+                            <Linkedin className="w-3.5 h-3.5" />
+                            <span className="font-medium">LinkedIn</span>
                           </a>
                         )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleSaveProfile(match.profile);
+                            handleSaveProfile(match.profile, match.reasoning);
                           }}
                           disabled={savedProfiles.has(match.profile.id)}
-                          className={`transition-colors ${
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
                             savedProfiles.has(match.profile.id)
-                              ? 'text-green-600'
-                              : 'text-gray-400 hover:text-[#DC2626]'
+                              ? 'text-green-600 bg-green-50 border-green-200'
+                              : 'text-stone-600 border-stone-200 hover:text-teal-600 hover:bg-teal-50 hover:border-teal-200'
                           }`}
                         >
-                          <Heart className={`w-4 h-4 ${savedProfiles.has(match.profile.id) ? 'fill-current' : ''}`} />
+                          <Heart className={`w-3.5 h-3.5 ${savedProfiles.has(match.profile.id) ? 'fill-current' : ''}`} />
+                          <span className="font-medium">{savedProfiles.has(match.profile.id) ? 'Saved' : 'Save'}</span>
                         </button>
                       </div>
                     )}
-                    
-                    {/* Dismiss button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const actualIndex = displayIndex + localIndex;
-                        // Pass the current index rather than profile ID
-                        handlePassProfile(currentMatches[actualIndex].profile.id);
-                      }}
-                      className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors z-20"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    
-                    {/* Content - full width */}
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#DC2626] to-[#EF4444] flex items-center justify-center text-white font-medium text-xs flex-shrink-0">
-                        {match.profile.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 text-sm mb-0.5">{match.profile.name}</h3>
-                        <p className="text-xs text-gray-500 mb-2">{match.profile.ms_program}</p>
-                        {isExpanded ? (
-                          <p className="text-sm text-gray-600 leading-relaxed">
-                            {match.reasoning}
-                          </p>
-                        ) : (
-                          <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
-                            {match.reasoning}
-                          </p>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 );
               })

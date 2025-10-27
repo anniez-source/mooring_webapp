@@ -17,7 +17,6 @@ export default function SavedPage() {
             </Link>
             <div className="flex items-center space-x-6">
               <Link href="/chat" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Find People</Link>
-              <Link href="/communities" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Communities</Link>
               <Link href="/saved" className="text-sm text-gray-900 font-medium">Saved</Link>
               <Link href="/profile" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Profile</Link>
             </div>
