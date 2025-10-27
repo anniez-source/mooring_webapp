@@ -54,7 +54,7 @@ export default function UserProfileDropdown() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
       >
-        {user.imageUrl ? (
+        {user.imageUrl && !user.imageUrl.includes('clerk.com/default') ? (
           <img
             src={user.imageUrl}
             alt={getUserName()}
