@@ -157,10 +157,20 @@ export async function POST(req: NextRequest) {
 
           // Create or get chat session
           if (!dbChatSessionId) {
+            // Get user's primary organization for session context
+            const { data: userOrgs } = await supabase
+              .from('organization_members')
+              .select('org_id')
+              .eq('user_id', dbUserId)
+              .limit(1);
+            
+            const primaryOrgId = userOrgs && userOrgs.length > 0 ? userOrgs[0].org_id : null;
+            
             const { data: newSession, error: sessionError } = await supabase
               .from('chat_sessions')
               .insert({
                 user_id: dbUserId,
+                org_id: primaryOrgId,
                 title: message.substring(0, 100), // Use first 100 chars as title
                 last_message_at: new Date().toISOString()
               })
