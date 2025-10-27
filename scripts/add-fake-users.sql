@@ -2,13 +2,13 @@
 -- Run this in Supabase SQL Editor
 
 -- First, let's get or create a default organization
-INSERT INTO organizations (id, name, description)
+INSERT INTO organizations (org_id, name, description)
 VALUES (
   '00000000-0000-0000-0000-000000000001',
   'Test Organization',
   'Default organization for testing'
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (org_id) DO NOTHING;
 
 -- Insert fake users
 INSERT INTO users (clerk_user_id, email, name) VALUES
