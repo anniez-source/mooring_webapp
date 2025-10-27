@@ -303,18 +303,21 @@ BEGIN
     EXECUTE 'DROP POLICY IF EXISTS "Users can view themes from their orgs" ON community_themes';
     
     -- Allow users to view themes from their organizations
-    EXECUTE 'CREATE POLICY "Users can view themes from their orgs" ON community_themes
-      FOR SELECT
-      TO authenticated
-      USING (
-        org_id IN (
-          SELECT org_id 
-          FROM organization_members 
-          WHERE user_id = (
-            SELECT user_id FROM users WHERE clerk_user_id = auth.jwt()->>'sub'
+    -- Note: Double quotes for identifiers, doubled single quotes for string literals in EXECUTE
+    EXECUTE $policy$
+      CREATE POLICY "Users can view themes from their orgs" ON community_themes
+        FOR SELECT
+        TO authenticated
+        USING (
+          org_id IN (
+            SELECT org_id 
+            FROM organization_members 
+            WHERE user_id = (
+              SELECT user_id FROM users WHERE clerk_user_id = auth.jwt()->>'sub'
+            )
           )
         )
-      )';
+    $policy$;
   END IF;
 END $$;
 
