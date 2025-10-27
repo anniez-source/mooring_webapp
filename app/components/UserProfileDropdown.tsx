@@ -25,11 +25,20 @@ export default function UserProfileDropdown() {
   if (!user) return null;
 
   const getInitial = () => {
-    if (user.firstName) {
+    console.log('[UserProfileDropdown] User data:', {
+      firstName: user?.firstName,
+      fullName: user?.fullName,
+      emailAddress: user?.primaryEmailAddress?.emailAddress
+    });
+    
+    if (user?.firstName) {
       return user.firstName.charAt(0).toUpperCase();
     }
-    if (user.fullName) {
+    if (user?.fullName) {
       return user.fullName.charAt(0).toUpperCase();
+    }
+    if (user?.primaryEmailAddress?.emailAddress) {
+      return user.primaryEmailAddress.emailAddress.charAt(0).toUpperCase();
     }
     return 'U';
   };
