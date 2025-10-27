@@ -131,7 +131,7 @@ export default function SavedContactsPage() {
             saved_at: item.created_at
           };
         })
-        .filter((contact): contact is SavedContact => contact !== null);
+        .filter(contact => contact !== null) as SavedContact[];
       
       setContacts(transformedContacts);
     } catch (error) {
