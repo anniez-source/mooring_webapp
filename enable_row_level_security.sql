@@ -362,6 +362,10 @@ FROM pg_policies
 WHERE schemaname = 'public'
 ORDER BY tablename, policyname;
 
-RAISE NOTICE 'RLS enabled successfully on all tables!';
-RAISE NOTICE 'Test by querying tables - you should only see your own data.';
+-- Success message
+DO $$
+BEGIN
+  RAISE NOTICE 'RLS enabled successfully on all tables!';
+  RAISE NOTICE 'Test by querying tables - you should only see your own data.';
+END $$;
 
