@@ -58,6 +58,11 @@ export default function ChatPage() {
   const [matchesWidth, setMatchesWidth] = useState(384); // Default width in px (w-96)
   const [isResizing, setIsResizing] = useState(false);
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{
+    name: string;
+    looking_for: Array<{ commitment: string; type: string }>;
+    open_to: Array<{ commitment: string; type: string }>;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -149,12 +154,76 @@ export default function ChatPage() {
     }
   }, [router, isLoaded, isSignedIn, messages.length, user]);
 
+  // Fetch user's profile interests on page load
+  useEffect(() => {
+    async function fetchUserProfile() {
+      if (!isSignedIn || !user) return;
+
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('user_id')
+          .eq('clerk_user_id', user.id)
+          .maybeSingle();
+
+        if (userError || !userData) {
+          console.error('[Chat] Error fetching user:', userError);
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('name, looking_for, open_to')
+          .eq('user_id', userData.user_id)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error('[Chat] Error fetching profile:', profileError);
+          return;
+        }
+
+        if (profileData) {
+          setUserProfile({
+            name: profileData.name || '',
+            looking_for: profileData.looking_for || [],
+            open_to: profileData.open_to || []
+          });
+        }
+      } catch (error) {
+        console.error('[Chat] Error fetching user profile:', error);
+      }
+    }
+
+    fetchUserProfile();
+  }, [isSignedIn, user]);
+
   const formatMessageContent = (content: string) => {
     // Convert markdown-style formatting to HTML
     return content
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-stone-900">$1</strong>') // Bold text with color
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
       .replace(/\n/g, '<br>'); // Line breaks
+  };
+
+  const formatLookingForLabel = (type: string): string => {
+    const labels: Record<string, string> = {
+      // High commitment - looking for
+      'technical_cofounder': 'Technical cofounder',
+      'business_cofounder': 'Business cofounder',
+      'domain_expert_cofounder': 'Domain expert cofounder',
+      'founding_team_member': 'Founding team member',
+      // Medium commitment - looking for
+      'advisor': 'Advisor or mentor',
+      'service_provider': 'Receiving paid services',
+      'beta_tester': 'Beta tester',
+      // Low commitment - looking for
+      'introduction': 'Introductions',
+      'coffee_chats': 'Coffee chats / networking',
+      'feedback': 'Feedback on idea / product',
+      // Other
+      'other': 'Other'
+    };
+    return labels[type] || type.replace(/_/g, ' ');
   };
 
   // Helper function to determine commitment level from the user's search query and AI's assessment
@@ -274,6 +343,15 @@ export default function ChatPage() {
       setChatSessionId(null); // Reset session ID for new conversation
     };
 
+  const handleQuickSearch = (item: { commitment: string; type: string }) => {
+    const query = `I'm looking for ${formatLookingForLabel(item.type).toLowerCase()}`;
+    setInput(query);
+    // Auto-submit the search
+    setTimeout(() => {
+      sendMessage();
+    }, 100);
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -296,6 +374,24 @@ export default function ChatPage() {
         content: msg.content
       }));
 
+      // Check if query matches declared interests
+      const matchesDeclaredInterest = userProfile?.looking_for?.some(item => {
+        const typeLabel = formatLookingForLabel(item.type).toLowerCase();
+        const queryLower = userMessage.content.toLowerCase();
+        return queryLower.includes(typeLabel) || 
+               queryLower.includes(item.type.replace(/_/g, ' '));
+      });
+
+      // If searching outside profile interests, add a subtle system note
+      if (userProfile && !matchesDeclaredInterest && userProfile.looking_for.length > 0) {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 0.5).toString(),
+          role: 'assistant',
+          content: "💡 Note: This search is outside your profile interests. I can still search, but matches might be one-way (they can help you, but may not need what you offer).",
+          timestamp: new Date()
+        }]);
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -304,7 +400,11 @@ export default function ChatPage() {
         body: JSON.stringify({
           message: userMessage.content,
           conversationHistory,
-          chatSessionId: chatSessionId // Send session ID to API
+          chatSessionId: chatSessionId, // Send session ID to API
+          userProfile: userProfile ? {
+            looking_for: userProfile.looking_for,
+            open_to: userProfile.open_to
+          } : null
         }),
       });
 
@@ -674,6 +774,59 @@ export default function ChatPage() {
               <div ref={messagesEndRef} />
             </div>
           </div>
+
+          {/* User's Declared Interests */}
+          {userProfile && userProfile.looking_for && userProfile.looking_for.length > 0 && (
+            <div className="border-t border-stone-200 px-8 py-4 bg-stone-50/60">
+              <div className="max-w-2xl mx-auto">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">🤖</span>
+                  <div className="flex-1">
+                    <p className="font-medium text-stone-900 mb-2 text-sm">
+                      Based on your profile, you're seeking:
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {userProfile.looking_for.map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleQuickSearch(item)}
+                          className="px-3 py-1.5 bg-white border border-stone-300 rounded-full text-xs hover:bg-teal-50 hover:border-teal-500 transition-colors flex items-center gap-2"
+                        >
+                          <span>
+                            {item.commitment === 'high' && <Flame className="w-3 h-3 inline text-red-600" />}
+                            {item.commitment === 'medium' && <Handshake className="w-3 h-3 inline text-red-600" />}
+                            {item.commitment === 'low' && <Coffee className="w-3 h-3 inline text-red-600" />}
+                          </span>
+                          <span className="text-stone-700">{formatLookingForLabel(item.type)}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="text-xs text-stone-500">
+                      Click a button to search, or describe your specific need below. 
+                      <Link href="/profile" className="text-teal-600 hover:underline ml-1">
+                        Update your profile interests
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Empty Profile State */}
+          {userProfile && (!userProfile.looking_for || userProfile.looking_for.length === 0) && (
+            <div className="border-t border-stone-200 px-8 py-4 bg-yellow-50/60">
+              <div className="max-w-2xl mx-auto">
+                <p className="text-sm text-yellow-800">
+                  💡 You haven't set what you're looking for in your profile yet. 
+                  <Link href="/profile" className="underline ml-1 font-medium">
+                    Add your interests
+                  </Link> 
+                  {' '}for better matches.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Input */}
           <div className="border-t border-stone-200 px-8 py-5 bg-white/60">

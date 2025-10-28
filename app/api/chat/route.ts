@@ -193,7 +193,7 @@ export async function POST(req: NextRequest) {
       apiKey: apiKey,
     });
 
-    const { message, conversationHistory, conversationId, chatSessionId } = await req.json();
+    const { message, conversationHistory, conversationId, chatSessionId, userProfile: clientUserProfile } = await req.json();
 
     // Get current user from Clerk
     const { userId: clerkUserId } = await auth();
@@ -201,7 +201,8 @@ export async function POST(req: NextRequest) {
     let dbChatSessionId: string | null = chatSessionId || null;
 
     // Get database user_id and user's profile if authenticated
-    let userProfile: any = null;
+    // Prefer client-provided profile (more up-to-date) but fall back to database
+    let userProfile: any = clientUserProfile || null;
     
     if (clerkUserId) {
       try {
@@ -214,16 +215,20 @@ export async function POST(req: NextRequest) {
         if (userData) {
           dbUserId = userData.user_id;
           
-          // Fetch the current user's profile for context
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', dbUserId)
-            .single();
-          
-          if (profileData) {
-            userProfile = profileData;
-            console.log('[Chat API] User profile loaded for context');
+          // Fetch the current user's profile for context only if not provided by client
+          if (!clientUserProfile) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', dbUserId)
+              .single();
+            
+            if (profileData) {
+              userProfile = profileData;
+              console.log('[Chat API] User profile loaded from database');
+            }
+          } else {
+            console.log('[Chat API] Using client-provided user profile');
           }
 
           // Create or get chat session
@@ -367,12 +372,15 @@ export async function POST(req: NextRequest) {
     let userContext = '';
     if (userProfile) {
       userContext = `CURRENT USER'S PROFILE (the person asking for matches):
-Name: ${userProfile.name}
-Background: ${userProfile.background}
-Expertise: ${userProfile.expertise}
-Looking for: ${JSON.stringify(userProfile.looking_for)}
-Open to: ${JSON.stringify(userProfile.open_to)}
+${userProfile.name ? `Name: ${userProfile.name}` : ''}
+${userProfile.background ? `Background: ${userProfile.background}` : ''}
+${userProfile.expertise ? `Expertise: ${userProfile.expertise}` : ''}
+Looking for: ${JSON.stringify(userProfile.looking_for || [])}
+Open to: ${JSON.stringify(userProfile.open_to || [])}
 
+${userProfile.looking_for && userProfile.looking_for.length > 0 ? 
+  'The user has declared these interests in their profile. When their search matches their declared interests, prioritize bidirectional matches. When searching outside declared interests, note that matches may be asymmetric.' : 
+  ''}
 Use this to provide personalized matches that complement their skills, fill their gaps, and align with what they're looking for.
 `;
     }
