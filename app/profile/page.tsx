@@ -32,6 +32,7 @@ export default function ProfilePage() {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [background, setBackground] = useState('');
+  const [workingOn, setWorkingOn] = useState('');
   const [expertise, setExpertise] = useState('');
   const [notLookingFor, setNotLookingFor] = useState('');
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -86,6 +87,7 @@ export default function ProfilePage() {
           setLinkedinUrl(profileData.linkedin_url || '');
           // Filter out "Profile incomplete" placeholders
           setBackground(profileData.background === 'Profile incomplete' ? '' : (profileData.background || ''));
+          setWorkingOn(profileData.working_on === 'Profile incomplete' ? '' : (profileData.working_on || ''));
           setExpertise(profileData.expertise === 'Profile incomplete' ? '' : (profileData.expertise || ''));
           setNotLookingFor(profileData.not_looking_for || '');
           setResumeFilename(profileData.resume_filename || '');
@@ -108,6 +110,9 @@ export default function ProfilePage() {
     // Clear "Profile incomplete" placeholders when entering edit mode
     if (background === 'Profile incomplete') {
       setBackground('');
+    }
+    if (workingOn === 'Profile incomplete') {
+      setWorkingOn('');
     }
     if (expertise === 'Profile incomplete') {
       setExpertise('');
@@ -166,6 +171,9 @@ export default function ProfilePage() {
     const newErrors: string[] = [];
     if (background.length < 150) {
       newErrors.push('Background must be at least 150 characters');
+    }
+    if (workingOn.length < 100) {
+      newErrors.push('What you\'re working on must be at least 100 characters');
     }
     if (expertise.length < 150) {
       newErrors.push('Expertise must be at least 150 characters');
@@ -235,6 +243,7 @@ export default function ProfilePage() {
         name: userData.name,
         email: userData.email,
         background,
+        working_on: workingOn,
         expertise,
         looking_for: lookingFor,
         open_to: openTo,
@@ -295,6 +304,7 @@ export default function ProfilePage() {
             setProfilePicture(profileData.profile_picture || null);
             setLinkedinUrl(profileData.linkedin_url || '');
             setBackground(profileData.background === 'Profile incomplete' ? '' : (profileData.background || ''));
+            setWorkingOn(profileData.working_on === 'Profile incomplete' ? '' : (profileData.working_on || ''));
             setExpertise(profileData.expertise === 'Profile incomplete' ? '' : (profileData.expertise || ''));
             setNotLookingFor(profileData.not_looking_for || '');
             setLookingFor(profileData.looking_for || []);
@@ -651,7 +661,7 @@ export default function ProfilePage() {
             {/* Background */}
             <div>
               <label className="block text-sm mb-2 font-medium text-stone-700">
-                What have you built or worked on?
+                What's your background? What have you built or worked on?
               </label>
               {!isEditing ? (
                 <p className={`text-sm whitespace-pre-wrap ${background && background !== 'Profile incomplete' ? 'text-stone-700' : 'text-stone-400'}`}>
@@ -662,17 +672,47 @@ export default function ProfilePage() {
                   <textarea
                     value={background}
                     onChange={(e) => setBackground(e.target.value)}
-                    rows={3}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
+                    rows={4}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[110px] transition-colors ${
                       showValidation && background.length < 150
                         ? 'border-red-300 bg-red-50/30 focus:border-red-500'
                         : 'border-stone-200 focus:border-teal-600'
                     }`}
                     style={{ lineHeight: '1.6' }}
-                    placeholder="e.g., Product manager at HubSpot for 4 years, shipped features used by 10k+ customers, worked across design and engineering teams..."
+                    placeholder="e.g., 10 years software engineering at startups. Built recommendation systems at Spotify, led platform team at fintech startup. Strong in Python, distributed systems, ML infrastructure."
                   />
                   <p className={`mt-2 text-xs ${background.length >= 150 ? 'text-teal-600' : showValidation && background.length < 150 ? 'text-red-600' : 'text-stone-400'}`}>
                     {background.length}/150 minimum
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Working On */}
+            <div>
+              <label className="block text-sm mb-2 font-medium text-stone-700">
+                What are you working on now? (Or exploring?)
+              </label>
+              {!isEditing ? (
+                <p className={`text-sm whitespace-pre-wrap ${workingOn && workingOn !== 'Profile incomplete' ? 'text-stone-700' : 'text-stone-400'}`}>
+                  {workingOn && workingOn !== 'Profile incomplete' ? workingOn : 'Not provided'}
+                </p>
+              ) : (
+                <>
+                  <textarea
+                    value={workingOn}
+                    onChange={(e) => setWorkingOn(e.target.value)}
+                    rows={3}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
+                      showValidation && workingOn.length < 100
+                        ? 'border-red-300 bg-red-50/30 focus:border-red-500'
+                        : 'border-stone-200 focus:border-teal-600'
+                    }`}
+                    style={{ lineHeight: '1.6' }}
+                    placeholder="e.g., Building a biotech marketplace connecting researchers to lab services. In beta with 50 users, raising seed round."
+                  />
+                  <p className={`mt-2 text-xs ${workingOn.length >= 100 ? 'text-teal-600' : showValidation && workingOn.length < 100 ? 'text-red-600' : 'text-stone-400'}`}>
+                    {workingOn.length}/100 minimum
                   </p>
                 </>
               )}

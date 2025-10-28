@@ -24,7 +24,8 @@ export default function OnboardingModal() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [currentWork, setCurrentWork] = useState('');
+  const [background, setBackground] = useState('');
+  const [workingOn, setWorkingOn] = useState('');
   const [expertiseOffering, setExpertiseOffering] = useState('');
   const [notLookingFor, setNotLookingFor] = useState('');
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -133,7 +134,7 @@ export default function OnboardingModal() {
 
         const { data: profileData, error: profileError} = await supabase
           .from('profiles')
-          .select('background, expertise, looking_for, open_to, opted_in')
+          .select('background, working_on, expertise, looking_for, open_to, opted_in')
           .eq('user_id', userData.user_id)
           .single();
 
@@ -145,10 +146,13 @@ export default function OnboardingModal() {
 
         const hasIncompleteProfile = 
           !profileData?.background || 
+          !profileData?.working_on ||
           !profileData?.expertise ||
           profileData?.background === 'Profile incomplete' ||
+          profileData?.working_on === 'Profile incomplete' ||
           profileData?.expertise === 'Profile incomplete' ||
           profileData?.background.length < 150 ||
+          profileData?.working_on.length < 100 ||
           profileData?.expertise.length < 150;
         
         setShowModal(hasIncompleteProfile);
@@ -164,8 +168,11 @@ export default function OnboardingModal() {
 
   const validate = () => {
     const newErrors: string[] = [];
-    if (currentWork.length < 150) {
+    if (background.length < 150) {
       newErrors.push('Please describe your background (minimum 150 characters)');
+    }
+    if (workingOn.length < 100) {
+      newErrors.push('Please describe what you\'re working on (minimum 100 characters)');
     }
     if (expertiseOffering.length < 150) {
       newErrors.push('Please describe your expertise (minimum 150 characters)');
@@ -241,7 +248,8 @@ export default function OnboardingModal() {
         user_id: userData.user_id,
         name: userData.name,
         email: userData.email,
-        background: currentWork,
+        background: background,
+        working_on: workingOn,
         expertise: expertiseOffering,
         looking_for: lookingFor,
         open_to: openTo,
@@ -275,7 +283,8 @@ export default function OnboardingModal() {
   };
 
   const isFormValid =
-    currentWork.length >= 150 &&
+    background.length >= 150 &&
+    workingOn.length >= 100 &&
     expertiseOffering.length >= 150 &&
     lookingFor.length > 0 &&
     openTo.length > 0 &&
@@ -318,6 +327,7 @@ export default function OnboardingModal() {
         name: userData.name,
         email: userData.email,
         background: 'Profile incomplete',
+        working_on: 'Profile incomplete',
         expertise: 'Profile incomplete',
         looking_for: [],
         open_to: [],
@@ -519,22 +529,43 @@ export default function OnboardingModal() {
             
             <div>
               <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
-                What have you built or worked on?
+                What's your background? What have you built or worked on?
               </label>
               <textarea
-                value={currentWork}
-                onChange={(e) => setCurrentWork(e.target.value)}
-                rows={3}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
-                  showValidation && currentWork.length < 150
+                value={background}
+                onChange={(e) => setBackground(e.target.value)}
+                rows={4}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[110px] transition-colors ${
+                  showValidation && background.length < 150
                     ? 'border-red-300 bg-red-50/30 focus:border-red-500'
                     : 'border-stone-200 focus:border-teal-600'
                 }`}
                 style={{ boxShadow: 'none', lineHeight: '1.6' }}
-                placeholder="e.g., Product manager at HubSpot for 4 years, shipped features used by 10k+ customers, worked across design and engineering teams..."
+                placeholder="e.g., 10 years software engineering at startups. Built recommendation systems at Spotify, led platform team at fintech startup. Strong in Python, distributed systems, ML infrastructure."
               />
-              <p className={`mt-2 ${currentWork.length >= 150 ? 'text-teal-600' : showValidation && currentWork.length < 150 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
-                {currentWork.length}/150 minimum
+              <p className={`mt-2 ${background.length >= 150 ? 'text-teal-600' : showValidation && background.length < 150 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
+                {background.length}/150 minimum
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
+                What are you working on now? (Or exploring?)
+              </label>
+              <textarea
+                value={workingOn}
+                onChange={(e) => setWorkingOn(e.target.value)}
+                rows={3}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
+                  showValidation && workingOn.length < 100
+                    ? 'border-red-300 bg-red-50/30 focus:border-red-500'
+                    : 'border-stone-200 focus:border-teal-600'
+                }`}
+                style={{ boxShadow: 'none', lineHeight: '1.6' }}
+                placeholder="e.g., Building a biotech marketplace connecting researchers to lab services. In beta with 50 users, raising seed round."
+              />
+              <p className={`mt-2 ${workingOn.length >= 100 ? 'text-teal-600' : showValidation && workingOn.length < 100 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
+                {workingOn.length}/100 minimum
               </p>
             </div>
 

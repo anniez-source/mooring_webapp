@@ -60,6 +60,9 @@ export default function ChatPage() {
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<{
     name: string;
+    background?: string;
+    working_on?: string;
+    expertise?: string;
     looking_for: Array<{ commitment: string; type: string }>;
     open_to: Array<{ commitment: string; type: string }>;
   } | null>(null);
@@ -173,7 +176,7 @@ export default function ChatPage() {
 
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('name, looking_for, open_to')
+          .select('name, background, working_on, expertise, looking_for, open_to')
           .eq('user_id', userData.user_id)
           .maybeSingle();
 
@@ -185,6 +188,9 @@ export default function ChatPage() {
         if (profileData) {
           setUserProfile({
             name: profileData.name || '',
+            background: profileData.background || '',
+            working_on: profileData.working_on || '',
+            expertise: profileData.expertise || '',
             looking_for: profileData.looking_for || [],
             open_to: profileData.open_to || []
           });
@@ -396,6 +402,10 @@ export default function ChatPage() {
           conversationHistory,
           chatSessionId: chatSessionId, // Send session ID to API
           userProfile: userProfile ? {
+            name: userProfile.name,
+            background: userProfile.background,
+            working_on: userProfile.working_on,
+            expertise: userProfile.expertise,
             looking_for: userProfile.looking_for,
             open_to: userProfile.open_to
           } : null

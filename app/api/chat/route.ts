@@ -371,17 +371,29 @@ export async function POST(req: NextRequest) {
     // Build user profile context if available
     let userContext = '';
     if (userProfile) {
-      userContext = `CURRENT USER'S PROFILE (the person asking for matches):
-${userProfile.name ? `Name: ${userProfile.name}` : ''}
-${userProfile.background ? `Background: ${userProfile.background}` : ''}
-${userProfile.expertise ? `Expertise: ${userProfile.expertise}` : ''}
-Looking for: ${JSON.stringify(userProfile.looking_for || [])}
-Open to: ${JSON.stringify(userProfile.open_to || [])}
+      userContext = `USER'S PROFILE CONTEXT:
 
-${userProfile.looking_for && userProfile.looking_for.length > 0 ? 
-  'The user has declared these interests in their profile. When their search matches their declared interests, prioritize bidirectional matches. When searching outside declared interests, note that matches may be asymmetric.' : 
-  ''}
-Use this to provide personalized matches that complement their skills, fill their gaps, and align with what they're looking for.
+Name: ${userProfile.name || 'Not provided'}
+
+Background: ${userProfile.background || 'Not provided'}
+
+Current work: ${userProfile.working_on || 'Not provided'}
+
+Expertise/Skills: ${userProfile.expertise || 'Not provided'}
+
+What user is seeking:
+${userProfile.looking_for && userProfile.looking_for.length > 0 ? userProfile.looking_for.map((i: any) => `- ${i.type} (${i.commitment} commitment)`).join('\n') : 'Not specified'}
+
+What user offers:
+${userProfile.open_to && userProfile.open_to.length > 0 ? userProfile.open_to.map((i: any) => `- ${i.type} (${i.commitment} commitment)`).join('\n') : 'Not specified'}
+
+MATCHING INSTRUCTIONS:
+- Consider user's current work domain when matching (biotech → biotech experts)
+- Match experience levels appropriately (senior → senior, junior → mentors)
+- Ensure bidirectional fit (both can help each other)
+- Prioritize domain relevance over generic skills
+- When user's search matches their declared interests, prioritize bidirectional matches
+- When searching outside declared interests, note that matches may be asymmetric
 `;
     }
 
