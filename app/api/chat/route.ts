@@ -15,16 +15,31 @@ MEMBER PROFILES:
 
 MATCHING CRITERIA - STRICT REQUIREMENTS:
 
-**CRITICAL FIRST FILTER - EXPLICIT AVAILABILITY:**
-Before considering ANY other factors, check the person's "available_for" (what they're open to):
-- If user wants a COFOUNDER → ONLY show people who explicitly have "Being a cofounder for the right fit" in their available_for
-- If user wants DOMAIN EXPERTISE → ONLY show people who have "Providing domain expertise" in their available_for
-- If user wants INTRODUCTIONS → ONLY show people who have "Making introductions" in their available_for
-- If user wants MENTORSHIP → ONLY show people who have "Mentoring" in their available_for
+**CRITICAL FIRST FILTER - COMMITMENT LEVEL ALIGNMENT (MOST IMPORTANT):**
+Profiles now include commitment levels for what people are seeking and offering. NEVER match people with misaligned commitment levels:
 
-DO NOT show someone as a match if they haven't explicitly indicated availability for what's being requested. Having the right skills is NOT enough - they must have stated they're open to that type of collaboration.
+COMMITMENT LEVELS:
+- **HIGH**: Cofounders, long-term collaborators, team members (significant time investment, long-term partnership)
+- **MEDIUM**: Advisors, project collaborators, ongoing service providers (regular interaction, ongoing relationship)
+- **LOW**: Introductions, quick consultations, coffee chats, one-time help (one-time or brief interaction)
 
-After confirming explicit availability, THEN consider these factors:
+MATCHING RULES:
+1. **COMMITMENT MUST MATCH**: Someone seeking HIGH commitment should ONLY see people offering HIGH commitment
+   - High ↔ High: Cofounders, long-term collaborators
+   - Medium ↔ Medium: Advisors, ongoing projects  
+   - Low ↔ Low: Introductions, quick advice
+2. **TYPE MUST MATCH**: Within the same commitment level, match the specific type:
+   - "technical_cofounder" seeking ↔ "being_technical_cofounder" offering
+   - "advisor" seeking ↔ "mentoring" offering
+   - "customer_introduction" seeking ↔ "making_introductions" offering
+3. **NEVER MIX LEVELS**: A person seeking a cofounder (high) should NEVER see someone only open to coffee chats (low)
+
+**EXPLICIT AVAILABILITY CHECK:**
+Before showing anyone, verify they have explicitly indicated availability at the RIGHT commitment level:
+- Check both the commitment level AND the type match
+- Having the right skills is NOT enough - they must be available at the matching commitment level
+
+After confirming commitment alignment and explicit availability, THEN consider these factors:
 
 1. RELEVANCE & COMPLEMENTARITY
    - Do they have the specific expertise/experience requested?
@@ -285,13 +300,10 @@ export async function POST(req: NextRequest) {
     const profilesContext = profiles.map((profile: any) => ({
       name: profile.name,
       email: profile.email,
-      ms_program: profile.ms_program,
       background: profile.background,
-      working_on: profile.working_on,
-      interests: profile.interests,
-      can_help_with: profile.expertise,
-      seeking_help_with: profile.looking_for,
-      available_for: profile.open_to,
+      expertise: profile.expertise,
+      looking_for: profile.looking_for, // Array of {commitment, type, detail?}
+      open_to: profile.open_to,        // Array of {commitment, type, detail?}
       linkedin_url: profile.linkedin_url
     }));
 
