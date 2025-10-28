@@ -66,6 +66,20 @@ export default function ChatPage() {
     looking_for: Array<{ commitment: string; type: string }>;
     open_to: Array<{ commitment: string; type: string }>;
   } | null>(null);
+  
+  // Conversation state for multi-step search flow
+  type ConversationState = 'initial' | 'gathering_context' | 'searching' | 'results';
+  const [conversationState, setConversationState] = useState<ConversationState>('initial');
+  const [searchContext, setSearchContext] = useState<{
+    selectedInterest: { commitment: string; type: string } | null;
+    collectedContext: Record<string, string>;
+    currentQuestion: number;
+  }>({
+    selectedInterest: null,
+    collectedContext: {},
+    currentQuestion: 0
+  });
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -232,6 +246,69 @@ export default function ChatPage() {
     return labels[type] || type.replace(/_/g, ' ');
   };
 
+  // Context questions for each interest type
+  const contextQuestions: Record<string, string[]> = {
+    'technical_cofounder': [
+      "What specific technical skills do you need? (e.g., backend, ML, mobile, frontend)",
+      "What stage is your project? (idea, building MVP, have users, have revenue)",
+      "Any domain expertise needed? (healthcare, climate, fintech, etc.)"
+    ],
+    'business_cofounder': [
+      "What business functions do you need? (sales, marketing, operations, fundraising)",
+      "What industry experience matters? (B2B SaaS, marketplace, hardware, etc.)",
+      "Project stage? (idea, building, have users, revenue)"
+    ],
+    'domain_expert_cofounder': [
+      "What specific domain expertise do you need?",
+      "Project stage? (idea, building, have users, revenue)",
+      "Any other requirements?"
+    ],
+    'founding_team_member': [
+      "What role or skills are you looking for?",
+      "Project stage? (idea, building, have users, revenue)",
+      "Full-time or part-time to start?"
+    ],
+    'advisor': [
+      "What area do you need advice on? (GTM, product, fundraising, technical, etc.)",
+      "How often would you want to meet? (weekly, monthly, as-needed)"
+    ],
+    'service_provider': [
+      "What specific services do you need?",
+      "What's your budget and timeline?"
+    ],
+    'beta_tester': [
+      "What type of product/service needs testing?",
+      "What specific feedback are you looking for?"
+    ],
+    'introduction': [
+      "Who are you trying to connect with? (specific person, type of person, or organization)",
+      "What's the purpose of the introduction?"
+    ],
+    'coffee_chats': [
+      "What would you like to discuss or learn about?"
+    ],
+    'feedback': [
+      "What specifically do you need feedback on? (idea, product, pitch, strategy, etc.)",
+      "What domain/expertise are you looking for in the feedback provider?"
+    ]
+  };
+
+  const getQuestionKeys = (type: string): string[] => {
+    const keys: Record<string, string[]> = {
+      'technical_cofounder': ['technicalSkills', 'projectStage', 'domain'],
+      'business_cofounder': ['businessFunctions', 'industryExperience', 'projectStage'],
+      'domain_expert_cofounder': ['domainExpertise', 'projectStage', 'otherRequirements'],
+      'founding_team_member': ['roleSkills', 'projectStage', 'commitment'],
+      'advisor': ['adviceArea', 'meetingFrequency'],
+      'service_provider': ['services', 'budgetTimeline'],
+      'beta_tester': ['productType', 'feedbackNeeded'],
+      'introduction': ['targetPerson', 'purpose'],
+      'coffee_chats': ['discussionTopic'],
+      'feedback': ['specificFeedback', 'domainExpertise']
+    };
+    return keys[type] || ['general'];
+  };
+
   // Helper function to determine commitment level from the user's search query and AI's assessment
   const determineSearchCommitmentLevel = (userQuery: string, aiResponse: string): 'low' | 'medium' | 'high' | undefined => {
     const lowerQuery = userQuery.toLowerCase();
@@ -335,6 +412,131 @@ export default function ChatPage() {
     return { text, people };
   };
 
+    const handleInterestSelect = (interest: { commitment: string; type: string }) => {
+      const questions = contextQuestions[interest.type] || [];
+      
+      if (questions.length === 0) {
+        // No context questions, search immediately
+        const query = `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}`;
+        setInput(query);
+        sendMessage(query);
+        return;
+      }
+      
+      // Start context gathering flow
+      setSearchContext({
+        selectedInterest: interest,
+        collectedContext: {},
+        currentQuestion: 0
+      });
+      setConversationState('gathering_context');
+      
+      // Add system message with first question
+      const firstQuestion = questions[0];
+      const systemMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `Great! You're looking for ${formatLookingForLabel(interest.type).toLowerCase()}.\n\n${userProfile?.working_on ? `You're currently working on: "${userProfile.working_on}"\n\n` : ''}To find the best match:\n\n${firstQuestion}`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, systemMessage]);
+      setInput('');
+    };
+
+    const handleContextResponse = async (response: string) => {
+      if (!response.trim()) return;
+      
+      const { selectedInterest, currentQuestion, collectedContext } = searchContext;
+      if (!selectedInterest) return;
+      
+      // Add user's response to messages
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: response,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Store the response
+      const questionKeys = getQuestionKeys(selectedInterest.type);
+      const questionKey = questionKeys[currentQuestion] || `question_${currentQuestion}`;
+      const updatedContext = {
+        ...collectedContext,
+        [questionKey]: response
+      };
+      
+      const questions = contextQuestions[selectedInterest.type] || [];
+      
+      // Check if more questions
+      if (currentQuestion + 1 < questions.length) {
+        // Ask next question
+        setSearchContext({
+          ...searchContext,
+          collectedContext: updatedContext,
+          currentQuestion: currentQuestion + 1
+        });
+        
+        const nextQuestion = questions[currentQuestion + 1];
+        const systemMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: nextQuestion,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, systemMessage]);
+        setInput('');
+      } else {
+        // Done gathering context, execute search
+        setSearchContext({
+          ...searchContext,
+          collectedContext: updatedContext
+        });
+        setConversationState('searching');
+        
+        // Show what we're searching for
+        const contextSummary = Object.values(updatedContext).map(v => `• ${v}`).join('\n');
+        const searchMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `Got it! Searching for ${formatLookingForLabel(selectedInterest.type).toLowerCase()} with:\n${contextSummary}`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, searchMessage]);
+        
+        // Build rich query from context
+        const richQuery = buildRichQuery(selectedInterest, updatedContext);
+        setInput('');
+        
+        // Execute search
+        await sendMessage(richQuery);
+        
+        // Reset conversation state
+        setConversationState('results');
+        setSearchContext({
+          selectedInterest: null,
+          collectedContext: {},
+          currentQuestion: 0
+        });
+      }
+    };
+
+    const buildRichQuery = (
+      interest: { commitment: string; type: string },
+      context: Record<string, string>
+    ): string => {
+      const contextDetails = Object.entries(context)
+        .map(([key, value]) => `- ${value}`)
+        .join('\n');
+      
+      return `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}.
+
+${userProfile?.background ? `My background: ${userProfile.background}\n\n` : ''}${userProfile?.working_on ? `Current work: ${userProfile.working_on}\n\n` : ''}Specific requirements:
+${contextDetails}
+
+Please find matches who can help with this specific context.`;
+    };
+
     const startNewChat = () => {
       setMessages([{
         id: '1',
@@ -347,6 +549,12 @@ export default function ChatPage() {
       setSavedProfiles(new Set());
       setConversationComplete(false);
       setChatSessionId(null); // Reset session ID for new conversation
+      setConversationState('initial');
+      setSearchContext({
+        selectedInterest: null,
+        collectedContext: {},
+        currentQuestion: 0
+      });
     };
 
   const sendMessage = async (messageOverride?: string) => {
@@ -564,15 +772,18 @@ export default function ChatPage() {
   };
 
   const handleQuickSearch = (item: { commitment: string; type: string }) => {
-    const query = `I'm looking for ${formatLookingForLabel(item.type).toLowerCase()}`;
-    setInput(query);
-    sendMessage(query);
+    // Use the new multi-step flow instead of immediate search
+    handleInterestSelect(item);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      if (conversationState === 'gathering_context') {
+        handleContextResponse(input);
+      } else {
+        sendMessage();
+      }
     }
   };
 
@@ -824,7 +1035,7 @@ export default function ChatPage() {
           )}
 
           {/* Empty Profile State */}
-          {userProfile && (!userProfile.looking_for || userProfile.looking_for.length === 0) && (
+          {userProfile && (!userProfile.looking_for || userProfile.looking_for.length === 0) && conversationState === 'initial' && (
             <div className="border-t border-stone-200 px-8 py-4 bg-yellow-50/60">
               <div className="max-w-2xl mx-auto">
                 <p className="text-sm text-yellow-800">
@@ -838,6 +1049,24 @@ export default function ChatPage() {
             </div>
           )}
 
+          {/* Progress Indicator for Context Gathering */}
+          {conversationState === 'gathering_context' && searchContext.selectedInterest && (
+            <div className="border-t border-stone-200 px-8 py-3 bg-blue-50/60">
+              <div className="max-w-2xl mx-auto">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-blue-900">
+                      Finding: {formatLookingForLabel(searchContext.selectedInterest.type)}
+                    </span>
+                  </div>
+                  <div className="text-blue-600 text-xs font-medium">
+                    Question {searchContext.currentQuestion + 1} of {contextQuestions[searchContext.selectedInterest.type]?.length || 1}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Input */}
           <div className="border-t border-stone-200 px-8 py-5 bg-white/60">
             <div className="max-w-2xl mx-auto">
@@ -845,7 +1074,7 @@ export default function ChatPage() {
                 <input
                   className="w-full bg-white border border-stone-200 rounded-xl pl-4 pr-12 py-3.5 text-sm placeholder-stone-400 text-stone-800 focus:outline-none focus:border-teal-600 focus:ring-0 transition-colors"
                   style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }}
-                  placeholder="Ask what you're looking for..."
+                  placeholder={conversationState === 'gathering_context' ? 'Tell me more...' : "Ask what you're looking for..."}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -857,7 +1086,13 @@ export default function ChatPage() {
                       ? 'text-teal-600 hover:bg-teal-50' 
                       : 'text-stone-300'
                   }`}
-                  onClick={() => sendMessage()}
+                  onClick={() => {
+                    if (conversationState === 'gathering_context') {
+                      handleContextResponse(input);
+                    } else {
+                      sendMessage();
+                    }
+                  }}
                   disabled={isLoading || !input.trim()}
                 >
                   <Send className="w-4 h-4" />
