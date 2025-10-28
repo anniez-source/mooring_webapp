@@ -317,7 +317,7 @@ export default function ProfilePage() {
       'service_provider': 'Providing paid services',
       'beta_tester': 'Beta tester',
       // Low commitment - looking for
-      'introduction': 'Introduction to someone specific',
+      'introduction': 'Introductions',
       'coffee_chats': 'Coffee chats / networking',
       'feedback': 'Feedback on idea/product',
       'quick_consultation': 'Quick consultation (30 min)', // legacy
@@ -448,14 +448,13 @@ export default function ProfilePage() {
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
-    { type: 'project_collaborator', label: 'Project collaborator' },
     { type: 'service_provider', label: 'Providing paid services' },
     { type: 'beta_tester', label: 'Beta tester' },
     { type: 'other', label: 'Other' }
   ];
 
   const lookingForLowOptions = [
-    { type: 'introduction', label: 'Introduction to someone specific' },
+    { type: 'introduction', label: 'Introductions' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
     { type: 'feedback', label: 'Feedback on idea/product' },
     { type: 'other', label: 'Other' }

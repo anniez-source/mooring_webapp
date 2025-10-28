@@ -394,14 +394,13 @@ export default function OnboardingModal() {
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
-    { type: 'project_collaborator', label: 'Project collaborator' },
     { type: 'service_provider', label: 'Providing paid services' },
     { type: 'beta_tester', label: 'Beta tester' },
     { type: 'other', label: 'Other' }
   ];
 
   const lookingForLowOptions = [
-    { type: 'introduction', label: 'Introduction to someone specific' },
+    { type: 'introduction', label: 'Introductions' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
     { type: 'feedback', label: 'Feedback on idea/product' },
     { type: 'other', label: 'Other' }
