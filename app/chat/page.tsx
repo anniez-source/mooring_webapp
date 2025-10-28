@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { useUser, useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
-import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search } from 'lucide-react';
+import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search, Coffee, Flame, Handshake } from 'lucide-react';
 import CompleteProfileModal from '../components/CompleteProfileModal';
 import UserProfileDropdown from '../components/UserProfileDropdown';
 
@@ -40,6 +40,7 @@ interface MatchCard {
   profile: Profile;
   reasoning: string;
   relevanceScore: number;
+  commitmentLevel?: 'low' | 'medium' | 'high';
 }
 
 export default function ChatPage() {
@@ -154,6 +155,25 @@ export default function ChatPage() {
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-stone-900">$1</strong>') // Bold text with color
       .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
       .replace(/\n/g, '<br>'); // Line breaks
+  };
+
+  // Helper function to determine commitment level from profile's open_to array
+  const determineCommitmentLevel = (profile: Profile): 'low' | 'medium' | 'high' | undefined => {
+    if (!profile.open_to || profile.open_to.length === 0) return undefined;
+    
+    // Check for high commitment first (most specific)
+    const hasHigh = profile.open_to.some((item: any) => item.commitment === 'high');
+    if (hasHigh) return 'high';
+    
+    // Then medium
+    const hasMedium = profile.open_to.some((item: any) => item.commitment === 'medium');
+    if (hasMedium) return 'medium';
+    
+    // Then low
+    const hasLow = profile.open_to.some((item: any) => item.commitment === 'low');
+    if (hasLow) return 'low';
+    
+    return undefined;
   };
 
   const parseAssistantResponse = (rawContent: string): { text: string; people: Profile[] } => {
@@ -335,7 +355,8 @@ export default function ChatPage() {
           const matchCards: MatchCard[] = enrichedPeople.map((profile, index) => ({
             profile,
             reasoning: matchedPeople[index].background, // Use AI's reasoning from parsed response
-            relevanceScore: 95 - (index * 5)
+            relevanceScore: 95 - (index * 5),
+            commitmentLevel: determineCommitmentLevel(profile)
           }));
 
           console.log('Match cards created:', matchCards.length);
@@ -352,7 +373,8 @@ export default function ChatPage() {
           const matchCards: MatchCard[] = matchedPeople.map((profile, index) => ({
             profile,
             reasoning: profile.background,
-            relevanceScore: 95 - (index * 5)
+            relevanceScore: 95 - (index * 5),
+            commitmentLevel: determineCommitmentLevel(profile)
           }));
           setCurrentMatches(matchCards);
           setMessages(prev =>
@@ -685,7 +707,16 @@ export default function ChatPage() {
                         {match.profile.name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0 pr-6">
-                        <h3 className="font-semibold text-stone-900 text-sm mb-1">{match.profile.name}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-stone-900 text-sm">{match.profile.name}</h3>
+                          {match.commitmentLevel && (
+                            <span className="inline-flex items-center">
+                              {match.commitmentLevel === 'low' && <Coffee className="w-3.5 h-3.5 text-amber-600" />}
+                              {match.commitmentLevel === 'medium' && <Handshake className="w-3.5 h-3.5 text-blue-600" />}
+                              {match.commitmentLevel === 'high' && <Flame className="w-3.5 h-3.5 text-red-600" />}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-stone-500 mb-2.5">{match.profile.ms_program}</p>
                         {isExpanded ? (
                           <p className="text-sm text-stone-700 leading-relaxed" style={{ lineHeight: '1.6' }}>
