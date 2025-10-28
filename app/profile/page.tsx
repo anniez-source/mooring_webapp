@@ -12,6 +12,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+type CommitmentItem = {
+  commitment: 'high' | 'medium' | 'low';
+  type: string;
+  detail?: string;
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
@@ -27,23 +33,25 @@ export default function ProfilePage() {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [background, setBackground] = useState('');
   const [expertise, setExpertise] = useState('');
-  const [lookingFor, setLookingFor] = useState<string[]>([]);
-  const [openTo, setOpenTo] = useState<string[]>([]);
+  const [lookingFor, setLookingFor] = useState<CommitmentItem[]>([]);
+  const [openTo, setOpenTo] = useState<CommitmentItem[]>([]);
   const [optedIn, setOptedIn] = useState(false);
 
-  const lookingForOptions = [
-    'A cofounder',
-    'Domain expertise',
-    'Introductions',
-    'Mentorship'
-  ];
+  // Track "Other" text inputs
+  const [lookingForOtherText, setLookingForOtherText] = useState<{[key: string]: string}>({
+    high: '', medium: '', low: ''
+  });
+  const [openToOtherText, setOpenToOtherText] = useState<{[key: string]: string}>({
+    high: '', medium: '', low: ''
+  });
 
-  const openToOptions = [
-    'Being a cofounder for the right fit',
-    'Providing domain expertise',
-    'Making introductions',
-    'Mentoring'
-  ];
+  // Expandable sections state
+  const [expandedLookingFor, setExpandedLookingFor] = useState<{[key: string]: boolean}>({
+    high: true, medium: true, low: true
+  });
+  const [expandedOpenTo, setExpandedOpenTo] = useState<{[key: string]: boolean}>({
+    high: true, medium: true, low: true
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -53,7 +61,6 @@ export default function ProfilePage() {
       }
 
       try {
-        // Get user_id from users table
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('user_id')
@@ -66,7 +73,6 @@ export default function ProfilePage() {
           return;
         }
 
-        // Get profile data
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -79,7 +85,6 @@ export default function ProfilePage() {
           return;
         }
 
-        // Set profile data
         if (profileData) {
           setProfilePicture(profileData.profile_picture);
           setLinkedinUrl(profileData.linkedin_url || '');
@@ -88,6 +93,22 @@ export default function ProfilePage() {
           setLookingFor(profileData.looking_for || []);
           setOpenTo(profileData.open_to || []);
           setOptedIn(profileData.opted_in || false);
+          
+          // Initialize "Other" text from loaded data
+          const lookingForOthers = (profileData.looking_for || []).filter((item: CommitmentItem) => item.type === 'other');
+          const openToOthers = (profileData.open_to || []).filter((item: CommitmentItem) => item.type === 'other');
+          
+          const newLookingForOtherText: {[key: string]: string} = { high: '', medium: '', low: '' };
+          lookingForOthers.forEach((item: CommitmentItem) => {
+            if (item.detail) newLookingForOtherText[item.commitment] = item.detail;
+          });
+          setLookingForOtherText(newLookingForOtherText);
+          
+          const newOpenToOtherText: {[key: string]: string} = { high: '', medium: '', low: '' };
+          openToOthers.forEach((item: CommitmentItem) => {
+            if (item.detail) newOpenToOtherText[item.commitment] = item.detail;
+          });
+          setOpenToOtherText(newOpenToOtherText);
         }
 
         setIsLoading(false);
@@ -100,16 +121,68 @@ export default function ProfilePage() {
     fetchProfile();
   }, [user, isLoaded]);
 
-  const toggleLookingFor = (option: string) => {
-    setLookingFor(prev =>
-      prev.includes(option) ? prev.filter(o => o !== option) : [...prev, option]
-    );
+  const toggleLookingFor = (commitment: 'high' | 'medium' | 'low', type: string) => {
+    setLookingFor(prev => {
+      const exists = prev.find(item => item.commitment === commitment && item.type === type);
+      if (exists) {
+        return prev.filter(item => !(item.commitment === commitment && item.type === type));
+      } else {
+        return [...prev, { commitment, type }];
+      }
+    });
   };
 
-  const toggleOpenTo = (option: string) => {
-    setOpenTo(prev =>
-      prev.includes(option) ? prev.filter(o => o !== option) : [...prev, option]
-    );
+  const toggleOpenTo = (commitment: 'high' | 'medium' | 'low', type: string) => {
+    setOpenTo(prev => {
+      const exists = prev.find(item => item.commitment === commitment && item.type === type);
+      if (exists) {
+        return prev.filter(item => !(item.commitment === commitment && item.type === type));
+      } else {
+        return [...prev, { commitment, type }];
+      }
+    });
+  };
+
+  const handleLookingForOther = (commitment: 'high' | 'medium' | 'low', text: string) => {
+    setLookingForOtherText(prev => ({ ...prev, [commitment]: text }));
+    
+    setLookingFor(prev => {
+      const exists = prev.find(item => item.commitment === commitment && item.type === 'other');
+      const trimmedText = text.trim();
+      
+      if (!trimmedText) {
+        return prev.filter(item => !(item.commitment === commitment && item.type === 'other'));
+      } else if (exists) {
+        return prev.map(item =>
+          item.commitment === commitment && item.type === 'other'
+            ? { ...item, detail: trimmedText }
+            : item
+        );
+      } else {
+        return [...prev, { commitment, type: 'other', detail: trimmedText }];
+      }
+    });
+  };
+
+  const handleOpenToOther = (commitment: 'high' | 'medium' | 'low', text: string) => {
+    setOpenToOtherText(prev => ({ ...prev, [commitment]: text }));
+    
+    setOpenTo(prev => {
+      const exists = prev.find(item => item.commitment === commitment && item.type === 'other');
+      const trimmedText = text.trim();
+      
+      if (!trimmedText) {
+        return prev.filter(item => !(item.commitment === commitment && item.type === 'other'));
+      } else if (exists) {
+        return prev.map(item =>
+          item.commitment === commitment && item.type === 'other'
+            ? { ...item, detail: trimmedText }
+            : item
+        );
+      } else {
+        return [...prev, { commitment, type: 'other', detail: trimmedText }];
+      }
+    });
   };
 
   const handleProfilePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,6 +214,24 @@ export default function ProfilePage() {
     if (openTo.length === 0) {
       newErrors.push('Please select at least one option in "I\'m open to"');
     }
+    
+    // Validate "Other" selections
+    const lookingForOther = lookingFor.filter(item => item.type === 'other');
+    for (const item of lookingForOther) {
+      if (!item.detail || item.detail.length < 10) {
+        newErrors.push('Please provide details for "Other" selections (minimum 10 characters)');
+        break;
+      }
+    }
+    
+    const openToOther = openTo.filter(item => item.type === 'other');
+    for (const item of openToOther) {
+      if (!item.detail || item.detail.length < 10) {
+        newErrors.push('Please provide details for "Other" selections (minimum 10 characters)');
+        break;
+      }
+    }
+    
     if (linkedinUrl && !linkedinUrl.match(/^https?:\/\/(www\.)?linkedin\.com\/.+/i)) {
       newErrors.push('Please enter a valid LinkedIn URL');
     }
@@ -158,11 +249,9 @@ export default function ProfilePage() {
     }
 
     if (!user) return;
-
     setIsSaving(true);
 
     try {
-      // Get user_id
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('user_id, name, email')
@@ -212,7 +301,6 @@ export default function ProfilePage() {
     setIsEditing(false);
     setShowValidation(false);
     setErrors([]);
-    // Refresh to reset data
     router.refresh();
   };
 
@@ -233,12 +321,237 @@ export default function ProfilePage() {
     background.length >= 150 &&
     expertise.length >= 150 &&
     lookingFor.length > 0 &&
-    openTo.length > 0;
+    openTo.length > 0 &&
+    lookingFor.filter(item => item.type === 'other').every(item => item.detail && item.detail.length >= 10) &&
+    openTo.filter(item => item.type === 'other').every(item => item.detail && item.detail.length >= 10);
+
+  // Display format helper
+  const formatCommitmentItem = (item: CommitmentItem) => {
+    const labels: {[key: string]: string} = {
+      // High commitment - looking for
+      'technical_cofounder': 'Technical cofounder',
+      'business_cofounder': 'Business/operations cofounder',
+      'long_term_collaborator': 'Long-term project collaborator',
+      'team_member': 'Team member (employee/contractor)',
+      // Medium commitment - looking for
+      'advisor': 'Advisor or mentor',
+      'project_collaborator': 'Project collaborator (specific project)',
+      'service_provider': 'Service provider (ongoing)',
+      'beta_tester': 'Beta tester / design partner',
+      // Low commitment - looking for
+      'customer_introduction': 'Customer/client introduction',
+      'investor_introduction': 'Investor introduction',
+      'expert_introduction': 'Expert introduction',
+      'quick_consultation': 'Quick consultation (30 min)',
+      'coffee_chat': 'Coffee chat / networking',
+      'event_coattendee': 'Event co-attendee',
+      'one_time_service': 'One-time service need',
+      // High commitment - open to
+      'being_technical_cofounder': 'Being a technical cofounder',
+      'being_business_cofounder': 'Being a business cofounder',
+      'long_term_collaboration': 'Long-term collaboration',
+      'joining_team': 'Joining a team',
+      // Medium commitment - open to
+      'mentoring': 'Advising / mentoring',
+      'project_collaboration': 'Collaborating on projects',
+      'providing_services': 'Providing services (design, dev, consulting)',
+      'being_beta_tester': 'Being a beta tester',
+      // Low commitment - open to
+      'making_introductions': 'Making introductions',
+      'providing_consultation': 'Providing quick consultations (30 min)',
+      'coffee_chats': 'Coffee chats / networking',
+      'one_time_help': 'One-time help',
+      'other': 'Other'
+    };
+    
+    if (item.type === 'other' && item.detail) {
+      return `Other: ${item.detail}`;
+    }
+    return labels[item.type] || item.type;
+  };
+
+  const getCommitmentIcon = (commitment: string) => {
+    return commitment === 'high' ? '🔥' : commitment === 'medium' ? '🤝' : '☕';
+  };
+
+  const getCommitmentLabel = (commitment: string) => {
+    return commitment === 'high' ? 'High Commitment' : commitment === 'medium' ? 'Medium Commitment' : 'Low Commitment';
+  };
+
+  // Group items by commitment level for display
+  const groupByCommitment = (items: CommitmentItem[]) => {
+    const grouped: {[key: string]: CommitmentItem[]} = {
+      high: [],
+      medium: [],
+      low: []
+    };
+    items.forEach(item => {
+      grouped[item.commitment].push(item);
+    });
+    return grouped;
+  };
+
+  const CommitmentSection = ({
+    title,
+    commitment,
+    icon,
+    bgColor,
+    options,
+    selectedItems,
+    onToggle,
+    otherText,
+    onOtherChange,
+    expanded,
+    onToggleExpand
+  }: {
+    title: string;
+    commitment: 'high' | 'medium' | 'low';
+    icon: string;
+    bgColor: string;
+    options: { type: string; label: string }[];
+    selectedItems: CommitmentItem[];
+    onToggle: (commitment: 'high' | 'medium' | 'low', type: string) => void;
+    otherText: string;
+    onOtherChange: (commitment: 'high' | 'medium' | 'low', text: string) => void;
+    expanded: boolean;
+    onToggleExpand: () => void;
+  }) => {
+    const isOtherSelected = selectedItems.some(
+      item => item.commitment === commitment && item.type === 'other'
+    );
+
+    return (
+      <div className={`border-2 border-stone-200 rounded-lg overflow-hidden ${bgColor}`}>
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          className="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{icon}</span>
+            <span className="font-semibold text-stone-900 text-sm">{title}</span>
+          </div>
+          <span className="text-stone-500 text-sm">{expanded ? '▼' : '▶'}</span>
+        </button>
+        
+        {expanded && (
+          <div className="px-4 pb-4 space-y-2">
+            {options.map(option => {
+              const isChecked = selectedItems.some(
+                item => item.commitment === commitment && item.type === option.type
+              );
+              return (
+                <label
+                  key={option.type}
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded cursor-pointer transition-all ${
+                    isChecked
+                      ? 'bg-teal-50 border border-teal-500'
+                      : 'bg-white border border-stone-200 hover:border-teal-400'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onToggle(commitment, option.type)}
+                    className="h-4 w-4 text-teal-600 focus:ring-2 focus:ring-teal-500 rounded border-stone-300 cursor-pointer"
+                  />
+                  <span className={`text-sm ${isChecked ? 'text-teal-900 font-medium' : 'text-stone-700'}`}>
+                    {option.label}
+                  </span>
+                </label>
+              );
+            })}
+            
+            <div
+              className={`px-3 py-2.5 rounded border transition-all ${
+                isOtherSelected
+                  ? 'bg-teal-50 border-teal-500'
+                  : 'bg-white border-stone-200'
+              }`}
+            >
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isOtherSelected}
+                    onChange={() => {
+                      if (isOtherSelected) {
+                        onOtherChange(commitment, '');
+                      }
+                    }}
+                    className="h-4 w-4 text-teal-600 focus:ring-2 focus:ring-teal-500 rounded border-stone-300 cursor-pointer"
+                  />
+                  <span className={`text-sm ${isOtherSelected ? 'text-teal-900 font-medium' : 'text-stone-700'}`}>
+                    Other (please specify)
+                  </span>
+                </label>
+                {isOtherSelected && (
+                  <input
+                    type="text"
+                    value={otherText}
+                    onChange={(e) => onOtherChange(commitment, e.target.value)}
+                    placeholder="Describe what you're looking for..."
+                    className="w-full px-3 py-2 border border-stone-300 rounded focus:outline-none focus:border-teal-600 text-sm"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Options for each commitment level
+  const lookingForHighOptions = [
+    { type: 'technical_cofounder', label: 'Technical cofounder' },
+    { type: 'business_cofounder', label: 'Business/operations cofounder' },
+    { type: 'long_term_collaborator', label: 'Long-term project collaborator' },
+    { type: 'team_member', label: 'Team member (employee/contractor)' }
+  ];
+
+  const lookingForMediumOptions = [
+    { type: 'advisor', label: 'Advisor or mentor' },
+    { type: 'project_collaborator', label: 'Project collaborator (specific project)' },
+    { type: 'service_provider', label: 'Service provider (ongoing)' },
+    { type: 'beta_tester', label: 'Beta tester / design partner' }
+  ];
+
+  const lookingForLowOptions = [
+    { type: 'customer_introduction', label: 'Customer/client introduction' },
+    { type: 'investor_introduction', label: 'Investor introduction' },
+    { type: 'expert_introduction', label: 'Expert introduction' },
+    { type: 'quick_consultation', label: 'Quick consultation (30 min)' },
+    { type: 'coffee_chat', label: 'Coffee chat / networking' },
+    { type: 'event_coattendee', label: 'Event co-attendee' },
+    { type: 'one_time_service', label: 'One-time service need' }
+  ];
+
+  const openToHighOptions = [
+    { type: 'being_technical_cofounder', label: 'Being a technical cofounder' },
+    { type: 'being_business_cofounder', label: 'Being a business cofounder' },
+    { type: 'long_term_collaboration', label: 'Long-term collaboration' },
+    { type: 'joining_team', label: 'Joining a team' }
+  ];
+
+  const openToMediumOptions = [
+    { type: 'mentoring', label: 'Advising / mentoring' },
+    { type: 'project_collaboration', label: 'Collaborating on projects' },
+    { type: 'providing_services', label: 'Providing services (design, dev, consulting)' },
+    { type: 'being_beta_tester', label: 'Being a beta tester' }
+  ];
+
+  const openToLowOptions = [
+    { type: 'making_introductions', label: 'Making introductions' },
+    { type: 'providing_consultation', label: 'Providing quick consultations (30 min)' },
+    { type: 'coffee_chats', label: 'Coffee chats / networking' },
+    { type: 'one_time_help', label: 'One-time help' }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
       {/* Navbar */}
-      <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20">
+      <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20 relative z-50">
         <div className="max-w-6xl mx-auto px-8">
           <div className="flex justify-between h-16 items-center">
             <Link href="/" className="flex items-center gap-2">
@@ -402,47 +715,71 @@ export default function ProfilePage() {
                   I'm looking for
                 </h3>
                 {!isEditing ? (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {lookingFor.length > 0 ? (
-                      lookingFor.map((item) => (
-                        <div key={item} className="flex items-center gap-2 text-sm text-stone-700">
-                          <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
-                          {item}
-                        </div>
+                      Object.entries(groupByCommitment(lookingFor)).map(([commitment, items]) => (
+                        items.length > 0 && (
+                          <div key={commitment}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-base">{getCommitmentIcon(commitment)}</span>
+                              <span className="text-xs font-semibold text-stone-600">{getCommitmentLabel(commitment)}</span>
+                            </div>
+                            <div className="space-y-1.5 ml-6">
+                              {items.map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-sm text-stone-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                                  {formatCommitmentItem(item)}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
                       ))
                     ) : (
                       <p className="text-sm text-stone-400">Not specified</p>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
-                    {lookingForOptions.map((option) => (
-                      <label
-                        key={option}
-                        className={`
-                          group relative flex items-center gap-3.5 px-4 py-4 
-                          rounded-lg cursor-pointer transition-all duration-200
-                          ${lookingFor.includes(option)
-                            ? 'bg-teal-50 border-2 border-teal-500 shadow-sm'
-                            : showValidation && lookingFor.length === 0
-                            ? 'bg-white border-2 border-red-200 hover:border-red-300'
-                            : 'bg-white border-2 border-stone-200 hover:border-teal-400 hover:bg-teal-50/30'
-                          }
-                        `}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={lookingFor.includes(option)}
-                          onChange={() => toggleLookingFor(option)}
-                          className="h-5 w-5 text-teal-600 focus:ring-2 focus:ring-teal-500 rounded border-stone-300 cursor-pointer"
-                        />
-                        <span className={`text-sm font-medium ${
-                          lookingFor.includes(option) ? 'text-teal-900' : 'text-stone-700'
-                        }`}>
-                          {option}
-                        </span>
-                      </label>
-                    ))}
+                  <div className="space-y-3">
+                    <CommitmentSection
+                      title="High Commitment"
+                      commitment="high"
+                      icon="🔥"
+                      bgColor="bg-red-50/30"
+                      options={lookingForHighOptions}
+                      selectedItems={lookingFor}
+                      onToggle={toggleLookingFor}
+                      otherText={lookingForOtherText.high}
+                      onOtherChange={handleLookingForOther}
+                      expanded={expandedLookingFor.high}
+                      onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, high: !prev.high }))}
+                    />
+                    <CommitmentSection
+                      title="Medium Commitment"
+                      commitment="medium"
+                      icon="🤝"
+                      bgColor="bg-amber-50/30"
+                      options={lookingForMediumOptions}
+                      selectedItems={lookingFor}
+                      onToggle={toggleLookingFor}
+                      otherText={lookingForOtherText.medium}
+                      onOtherChange={handleLookingForOther}
+                      expanded={expandedLookingFor.medium}
+                      onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, medium: !prev.medium }))}
+                    />
+                    <CommitmentSection
+                      title="Low Commitment"
+                      commitment="low"
+                      icon="☕"
+                      bgColor="bg-teal-50/30"
+                      options={lookingForLowOptions}
+                      selectedItems={lookingFor}
+                      onToggle={toggleLookingFor}
+                      otherText={lookingForOtherText.low}
+                      onOtherChange={handleLookingForOther}
+                      expanded={expandedLookingFor.low}
+                      onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, low: !prev.low }))}
+                    />
                   </div>
                 )}
               </div>
@@ -453,47 +790,71 @@ export default function ProfilePage() {
                   I'm open to
                 </h3>
                 {!isEditing ? (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {openTo.length > 0 ? (
-                      openTo.map((item) => (
-                        <div key={item} className="flex items-center gap-2 text-sm text-stone-700">
-                          <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
-                          {item}
-                        </div>
+                      Object.entries(groupByCommitment(openTo)).map(([commitment, items]) => (
+                        items.length > 0 && (
+                          <div key={commitment}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-base">{getCommitmentIcon(commitment)}</span>
+                              <span className="text-xs font-semibold text-stone-600">{getCommitmentLabel(commitment)}</span>
+                            </div>
+                            <div className="space-y-1.5 ml-6">
+                              {items.map((item, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-sm text-stone-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                                  {formatCommitmentItem(item)}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
                       ))
                     ) : (
                       <p className="text-sm text-stone-400">Not specified</p>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
-                    {openToOptions.map((option) => (
-                      <label
-                        key={option}
-                        className={`
-                          group relative flex items-center gap-3.5 px-4 py-4 
-                          rounded-lg cursor-pointer transition-all duration-200
-                          ${openTo.includes(option)
-                            ? 'bg-teal-50 border-2 border-teal-500 shadow-sm'
-                            : showValidation && openTo.length === 0
-                            ? 'bg-white border-2 border-red-200 hover:border-red-300'
-                            : 'bg-white border-2 border-stone-200 hover:border-teal-400 hover:bg-teal-50/30'
-                          }
-                        `}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={openTo.includes(option)}
-                          onChange={() => toggleOpenTo(option)}
-                          className="h-5 w-5 text-teal-600 focus:ring-2 focus:ring-teal-500 rounded border-stone-300 cursor-pointer"
-                        />
-                        <span className={`text-sm font-medium ${
-                          openTo.includes(option) ? 'text-teal-900' : 'text-stone-700'
-                        }`}>
-                          {option}
-                        </span>
-                      </label>
-                    ))}
+                  <div className="space-y-3">
+                    <CommitmentSection
+                      title="High Commitment"
+                      commitment="high"
+                      icon="🔥"
+                      bgColor="bg-red-50/30"
+                      options={openToHighOptions}
+                      selectedItems={openTo}
+                      onToggle={toggleOpenTo}
+                      otherText={openToOtherText.high}
+                      onOtherChange={handleOpenToOther}
+                      expanded={expandedOpenTo.high}
+                      onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, high: !prev.high }))}
+                    />
+                    <CommitmentSection
+                      title="Medium Commitment"
+                      commitment="medium"
+                      icon="🤝"
+                      bgColor="bg-amber-50/30"
+                      options={openToMediumOptions}
+                      selectedItems={openTo}
+                      onToggle={toggleOpenTo}
+                      otherText={openToOtherText.medium}
+                      onOtherChange={handleOpenToOther}
+                      expanded={expandedOpenTo.medium}
+                      onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, medium: !prev.medium }))}
+                    />
+                    <CommitmentSection
+                      title="Low Commitment"
+                      commitment="low"
+                      icon="☕"
+                      bgColor="bg-teal-50/30"
+                      options={openToLowOptions}
+                      selectedItems={openTo}
+                      onToggle={toggleOpenTo}
+                      otherText={openToOtherText.low}
+                      onOtherChange={handleOpenToOther}
+                      expanded={expandedOpenTo.low}
+                      onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, low: !prev.low }))}
+                    />
                   </div>
                 )}
               </div>
