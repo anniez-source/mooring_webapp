@@ -292,9 +292,12 @@ export default function ChatPage() {
       }
 
       // After streaming is complete, parse the full content and update the message
+      console.log('=== PARSING AI RESPONSE ===');
+      console.log('Full AI response:', receivedText);
       const { text: finalContent, people: matchedPeople } = parseAssistantResponse(receivedText);
       
       console.log('Number of matched people:', matchedPeople.length);
+      console.log('Matched people:', matchedPeople);
       
       // Fetch full profile data from database to get real user_ids
       if (matchedPeople.length > 0) {
