@@ -287,7 +287,7 @@ export default function ChatPage() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
-    setCurrentMatches([]); // Clear previous matches
+    // Don't clear matches - they should persist unless new matches are found
     setDisplayIndex(0); // Reset to start
 
     try {
