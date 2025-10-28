@@ -343,27 +343,21 @@ export default function ChatPage() {
       setChatSessionId(null); // Reset session ID for new conversation
     };
 
-  const handleQuickSearch = (item: { commitment: string; type: string }) => {
-    const query = `I'm looking for ${formatLookingForLabel(item.type).toLowerCase()}`;
-    setInput(query);
-    // Auto-submit the search
-    setTimeout(() => {
-      sendMessage();
-    }, 100);
-  };
-
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (messageOverride?: string) => {
+    const messageText = messageOverride || input.trim();
+    if (!messageText || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: messageText,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    if (!messageOverride) {
+      setInput('');
+    }
     setIsLoading(true);
     // Don't clear matches - they should persist unless new matches are found
     setDisplayIndex(0); // Reset to start
@@ -557,6 +551,12 @@ export default function ChatPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQuickSearch = (item: { commitment: string; type: string }) => {
+    const query = `I'm looking for ${formatLookingForLabel(item.type).toLowerCase()}`;
+    setInput(query);
+    sendMessage(query);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -847,7 +847,7 @@ export default function ChatPage() {
                       ? 'text-teal-600 hover:bg-teal-50' 
                       : 'text-stone-300'
                   }`}
-                  onClick={sendMessage}
+                  onClick={() => sendMessage()}
                   disabled={isLoading || !input.trim()}
                 >
                   <Send className="w-4 h-4" />
