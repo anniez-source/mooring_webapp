@@ -28,10 +28,14 @@ MATCHING RULES:
    - High ↔ High: Cofounders, long-term collaborators
    - Medium ↔ Medium: Advisors, ongoing projects  
    - Low ↔ Low: Introductions, quick advice
-2. **TYPE MUST MATCH**: Within the same commitment level, match the specific type:
-   - "technical_cofounder" seeking ↔ "being_technical_cofounder" offering
-   - "advisor" seeking ↔ "mentoring" offering
-   - "customer_introduction" seeking ↔ "making_introductions" offering
+2. **TYPE MUST MATCH** - with "Other" flexibility:
+   - Specific types match exactly: "technical_cofounder" seeking ↔ "being_technical_cofounder" offering
+   - "Other" is FLEXIBLE within its commitment level:
+     * If someone selected "other" at HIGH commitment, they match with ANY high commitment type
+     * If someone selected "other" at MEDIUM commitment, they match with ANY medium commitment type
+     * If someone selected "other" at LOW commitment, they match with ANY low commitment type
+   - Example: User seeking {"high", "technical_cofounder"} matches with profile offering {"high", "other"}
+   - Example: User seeking {"medium", "other"} matches with ANY profile offering medium commitment
 3. **NEVER MIX LEVELS**: A person seeking a cofounder (high) should NEVER see someone only open to coffee chats (low)
 
 **EXPLICIT AVAILABILITY CHECK:**
