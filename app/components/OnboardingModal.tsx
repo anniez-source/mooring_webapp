@@ -386,15 +386,15 @@ export default function OnboardingModal() {
   // Options for each commitment level
   const lookingForHighOptions = [
     { type: 'technical_cofounder', label: 'Technical cofounder' },
-    { type: 'business_cofounder', label: 'Business/operations cofounder' },
-    { type: 'long_term_collaborator', label: 'Long-term project collaborator' },
-    { type: 'team_member', label: 'Team member (employee/contractor)' },
+    { type: 'business_cofounder', label: 'Business cofounder' },
+    { type: 'domain_expert_cofounder', label: 'Domain expert cofounder' },
+    { type: 'cocreator_founding_team', label: 'Co-creator / founding team member' },
     { type: 'other', label: 'Other' }
   ];
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
-    { type: 'project_collaborator', label: 'Project collaborator (specific project)' },
+    { type: 'project_collaborator', label: 'Project collaborator' },
     { type: 'service_provider', label: 'Service provider (ongoing)' },
     { type: 'beta_tester', label: 'Beta tester / design partner' },
     { type: 'other', label: 'Other' }
@@ -402,31 +402,31 @@ export default function OnboardingModal() {
 
   const lookingForLowOptions = [
     { type: 'introduction', label: 'Introduction to someone specific' },
-    { type: 'quick_consultation', label: 'Quick consultation (30 min)' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
+    { type: 'feedback', label: 'Feedback on idea/product' },
     { type: 'other', label: 'Other' }
   ];
 
   const openToHighOptions = [
     { type: 'being_technical_cofounder', label: 'Being a technical cofounder' },
     { type: 'being_business_cofounder', label: 'Being a business cofounder' },
-    { type: 'long_term_collaboration', label: 'Long-term collaboration' },
-    { type: 'joining_team', label: 'Joining a team' },
+    { type: 'being_domain_expert_cofounder', label: 'Being a domain expert cofounder' },
+    { type: 'being_cocreator_founding_team', label: 'Joining as co-creator / founding team' },
     { type: 'other', label: 'Other' }
   ];
 
   const openToMediumOptions = [
     { type: 'mentoring', label: 'Advising / mentoring' },
     { type: 'project_collaboration', label: 'Collaborating on projects' },
-    { type: 'providing_services', label: 'Providing services' },
-    { type: 'being_beta_tester', label: 'Being a beta tester' },
+    { type: 'providing_services', label: 'Providing services (ongoing)' },
+    { type: 'being_beta_tester', label: 'Being a beta tester / design partner' },
     { type: 'other', label: 'Other' }
   ];
 
   const openToLowOptions = [
     { type: 'making_introductions', label: 'Making introductions' },
-    { type: 'offering_consultation', label: 'Offering quick consultations (30 min)' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
+    { type: 'giving_feedback', label: 'Giving feedback on ideas/products' },
     { type: 'other', label: 'Other' }
   ];
 
