@@ -157,21 +157,30 @@ export default function ChatPage() {
       .replace(/\n/g, '<br>'); // Line breaks
   };
 
-  // Helper function to determine commitment level from profile's open_to array
-  const determineCommitmentLevel = (profile: Profile): 'low' | 'medium' | 'high' | undefined => {
-    if (!profile.open_to || profile.open_to.length === 0) return undefined;
+  // Helper function to extract commitment level from AI's reasoning text
+  const extractCommitmentFromReasoning = (reasoning: string, aiResponse: string): 'low' | 'medium' | 'high' | undefined => {
+    // First, try to extract from the full AI response context (Assessment section often mentions commitment)
+    const lowerResponse = aiResponse.toLowerCase();
+    const lowerReasoning = reasoning.toLowerCase();
     
-    // Check for high commitment first (most specific)
-    const hasHigh = profile.open_to.some((item: any) => item.commitment === 'high');
-    if (hasHigh) return 'high';
+    // Check for explicit commitment mentions in order of specificity
+    if (lowerResponse.includes('high commitment') || lowerResponse.includes('high-commitment') ||
+        lowerReasoning.includes('cofounder') || lowerReasoning.includes('co-founder') ||
+        lowerReasoning.includes('long-term partner') || lowerReasoning.includes('team member')) {
+      return 'high';
+    }
     
-    // Then medium
-    const hasMedium = profile.open_to.some((item: any) => item.commitment === 'medium');
-    if (hasMedium) return 'medium';
+    if (lowerResponse.includes('medium commitment') || lowerResponse.includes('medium-commitment') ||
+        lowerReasoning.includes('advisor') || lowerReasoning.includes('advising') ||
+        lowerReasoning.includes('ongoing') || lowerReasoning.includes('regular collaboration')) {
+      return 'medium';
+    }
     
-    // Then low
-    const hasLow = profile.open_to.some((item: any) => item.commitment === 'low');
-    if (hasLow) return 'low';
+    if (lowerResponse.includes('low commitment') || lowerResponse.includes('low-commitment') ||
+        lowerReasoning.includes('introduction') || lowerReasoning.includes('quick consultation') ||
+        lowerReasoning.includes('coffee chat') || lowerReasoning.includes('one-time')) {
+      return 'low';
+    }
     
     return undefined;
   };
@@ -353,11 +362,13 @@ export default function ChatPage() {
           
           // Create match cards with reasoning from AI
           const matchCards: MatchCard[] = enrichedPeople.map((profile, index) => {
-            const commitmentLevel = determineCommitmentLevel(profile);
-            console.log(`Profile ${profile.name}: open_to =`, profile.open_to, 'commitment level =', commitmentLevel);
+            const reasoning = matchedPeople[index].background; // Use AI's reasoning from parsed response
+            // Extract commitment level from AI's response context
+            const commitmentLevel = extractCommitmentFromReasoning(reasoning, receivedText);
+            console.log(`Profile ${profile.name}: commitment level = ${commitmentLevel} (extracted from AI reasoning)`);
             return {
               profile,
-              reasoning: matchedPeople[index].background, // Use AI's reasoning from parsed response
+              reasoning,
               relevanceScore: 95 - (index * 5),
               commitmentLevel
             };
@@ -375,12 +386,16 @@ export default function ChatPage() {
           );
         } else {
           // Fallback if database fetch fails
-          const matchCards: MatchCard[] = matchedPeople.map((profile, index) => ({
-            profile,
-            reasoning: profile.background,
-            relevanceScore: 95 - (index * 5),
-            commitmentLevel: determineCommitmentLevel(profile)
-          }));
+          const matchCards: MatchCard[] = matchedPeople.map((profile, index) => {
+            const reasoning = profile.background;
+            const commitmentLevel = extractCommitmentFromReasoning(reasoning, receivedText);
+            return {
+              profile,
+              reasoning,
+              relevanceScore: 95 - (index * 5),
+              commitmentLevel
+            };
+          });
           setCurrentMatches(matchCards);
           setMessages(prev =>
             prev.map(msg =>
