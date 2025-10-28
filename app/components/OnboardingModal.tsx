@@ -27,6 +27,7 @@ export default function OnboardingModal() {
   const [currentWork, setCurrentWork] = useState('');
   const [expertiseOffering, setExpertiseOffering] = useState('');
   const [notLookingFor, setNotLookingFor] = useState('');
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [lookingFor, setLookingFor] = useState<CommitmentItem[]>([]);
   const [openTo, setOpenTo] = useState<CommitmentItem[]>([]);
   const [consent, setConsent] = useState(false);
@@ -76,6 +77,29 @@ export default function OnboardingModal() {
         setProfilePicture(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file type
+      const validTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/msword' // .doc
+      ];
+      if (!validTypes.includes(file.type)) {
+        setErrors(['Please upload a PDF or Word document']);
+        return;
+      }
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(['Resume file must be less than 5MB']);
+        return;
+      }
+      setResumeFile(file);
+      setErrors([]);
     }
   };
 
@@ -230,6 +254,9 @@ export default function OnboardingModal() {
       }
       if (profilePicture) {
         profileData.profile_picture = profilePicture;
+      }
+      if (resumeFile) {
+        profileData.resume_filename = resumeFile.name;
       }
 
       const { error: upsertError } = await supabase
@@ -530,6 +557,28 @@ export default function OnboardingModal() {
               <p className={`mt-2 ${expertiseOffering.length >= 150 ? 'text-teal-600' : showValidation && expertiseOffering.length < 150 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
                 {expertiseOffering.length}/150 minimum
               </p>
+            </div>
+
+            {/* Resume Upload */}
+            <div>
+              <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
+                Resume <span className="text-stone-400">(optional)</span>
+              </label>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={handleResumeUpload}
+                className="w-full text-sm text-stone-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 file:cursor-pointer cursor-pointer"
+              />
+              <p className="mt-1 text-xs text-stone-400">
+                Upload your resume (PDF or Word, max 5MB)
+              </p>
+              {resumeFile && (
+                <div className="mt-2 flex items-center gap-2 text-sm text-teal-600">
+                  <span>✓</span>
+                  <span>{resumeFile.name}</span>
+                </div>
+              )}
             </div>
 
           </div>

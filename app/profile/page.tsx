@@ -34,6 +34,8 @@ export default function ProfilePage() {
   const [background, setBackground] = useState('');
   const [expertise, setExpertise] = useState('');
   const [notLookingFor, setNotLookingFor] = useState('');
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeFilename, setResumeFilename] = useState<string>('');
   const [lookingFor, setLookingFor] = useState<CommitmentItem[]>([]);
   const [openTo, setOpenTo] = useState<CommitmentItem[]>([]);
   const [optedIn, setOptedIn] = useState(false);
@@ -86,6 +88,7 @@ export default function ProfilePage() {
           setBackground(profileData.background === 'Profile incomplete' ? '' : (profileData.background || ''));
           setExpertise(profileData.expertise === 'Profile incomplete' ? '' : (profileData.expertise || ''));
           setNotLookingFor(profileData.not_looking_for || '');
+          setResumeFilename(profileData.resume_filename || '');
           setLookingFor(profileData.looking_for || []);
           setOpenTo(profileData.open_to || []);
           setOptedIn(profileData.opted_in || false);
@@ -180,6 +183,29 @@ export default function ProfilePage() {
     return newErrors;
   };
 
+  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file type
+      const validTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+        'application/msword' // .doc
+      ];
+      if (!validTypes.includes(file.type)) {
+        setErrors(['Please upload a PDF or Word document']);
+        return;
+      }
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(['Resume file must be less than 5MB']);
+        return;
+      }
+      setResumeFile(file);
+      setErrors([]);
+    }
+  };
+
   const handleSave = async () => {
     setErrors([]);
     setShowValidation(true);
@@ -216,6 +242,7 @@ export default function ProfilePage() {
         linkedin_url: linkedinUrl || null,
         profile_picture: profilePicture || null,
         not_looking_for: notLookingFor || null,
+        resume_filename: resumeFile ? resumeFile.name : resumeFilename || null,
         updated_at: new Date().toISOString()
       };
 
@@ -587,6 +614,38 @@ export default function ProfilePage() {
                   className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-teal-600 focus:ring-0 text-sm text-stone-900 placeholder:text-stone-400 transition-colors"
                   placeholder="https://linkedin.com/in/yourname"
                 />
+              )}
+            </div>
+
+            {/* Resume */}
+            <div>
+              <label className="block text-sm mb-2 font-medium text-stone-700">
+                Resume <span className="text-stone-400">(optional)</span>
+              </label>
+              {!isEditing ? (
+                resumeFilename ? (
+                  <p className="text-sm text-stone-700">{resumeFilename}</p>
+                ) : (
+                  <p className="text-sm text-stone-400">Not provided</p>
+                )
+              ) : (
+                <div>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleResumeUpload}
+                    className="w-full text-sm text-stone-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 file:cursor-pointer cursor-pointer"
+                  />
+                  <p className="mt-1 text-xs text-stone-400">
+                    Upload your resume (PDF or Word, max 5MB)
+                  </p>
+                  {(resumeFile || resumeFilename) && (
+                    <div className="mt-2 flex items-center gap-2 text-sm text-teal-600">
+                      <span>✓</span>
+                      <span>{resumeFile ? resumeFile.name : resumeFilename}</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
