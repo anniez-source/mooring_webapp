@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { Coffee, Flame, Handshake } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -315,7 +316,7 @@ export default function OnboardingModal() {
     title,
     subtitle,
     commitment,
-    icon,
+    Icon,
     bgColor,
     options,
     selectedItems,
@@ -326,7 +327,7 @@ export default function OnboardingModal() {
     title: string;
     subtitle: string;
     commitment: 'high' | 'medium' | 'low';
-    icon: string;
+    Icon: React.ComponentType<{ className?: string }>;
     bgColor: string;
     options: { type: string; label: string }[];
     selectedItems: CommitmentItem[];
@@ -341,7 +342,7 @@ export default function OnboardingModal() {
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-lg">{icon}</span>
+          <Icon className="w-5 h-5" />
           <div className="text-left">
             <div className="font-semibold text-stone-900 text-sm">{title}</div>
             <div className="text-xs text-stone-500">{subtitle}</div>
@@ -552,7 +553,7 @@ export default function OnboardingModal() {
                   title="High Commitment"
                   subtitle="Long-term partnership, significant time investment"
                   commitment="high"
-                  icon="🔥"
+                  Icon={Flame}
                   bgColor="bg-red-50/20"
                   options={lookingForHighOptions}
                   selectedItems={lookingFor}
@@ -564,7 +565,7 @@ export default function OnboardingModal() {
                   title="Medium Commitment"
                   subtitle="Ongoing relationship, regular interaction"
                   commitment="medium"
-                  icon="🤝"
+                  Icon={Handshake}
                   bgColor="bg-amber-50/20"
                   options={lookingForMediumOptions}
                   selectedItems={lookingFor}
@@ -576,7 +577,7 @@ export default function OnboardingModal() {
                   title="Low Commitment"
                   subtitle="One-time help, quick interaction"
                   commitment="low"
-                  icon="☕"
+                  Icon={Coffee}
                   bgColor="bg-teal-50/20"
                   options={lookingForLowOptions}
                   selectedItems={lookingFor}
@@ -608,7 +609,7 @@ export default function OnboardingModal() {
                   title="High Commitment"
                   subtitle="Long-term partnership, significant time investment"
                   commitment="high"
-                  icon="🔥"
+                  Icon={Flame}
                   bgColor="bg-red-50/20"
                   options={openToHighOptions}
                   selectedItems={openTo}
@@ -620,7 +621,7 @@ export default function OnboardingModal() {
                   title="Medium Commitment"
                   subtitle="Ongoing relationship, regular interaction"
                   commitment="medium"
-                  icon="🤝"
+                  Icon={Handshake}
                   bgColor="bg-amber-50/20"
                   options={openToMediumOptions}
                   selectedItems={openTo}
@@ -632,7 +633,7 @@ export default function OnboardingModal() {
                   title="Low Commitment"
                   subtitle="One-time help, quick interaction"
                   commitment="low"
-                  icon="☕"
+                  Icon={Coffee}
                   bgColor="bg-teal-50/20"
                   options={openToLowOptions}
                   selectedItems={openTo}
