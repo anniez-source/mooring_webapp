@@ -157,28 +157,35 @@ export default function ChatPage() {
       .replace(/\n/g, '<br>'); // Line breaks
   };
 
-  // Helper function to extract commitment level from AI's reasoning text
-  const extractCommitmentFromReasoning = (reasoning: string, aiResponse: string): 'low' | 'medium' | 'high' | undefined => {
-    // First, try to extract from the full AI response context (Assessment section often mentions commitment)
+  // Helper function to determine commitment level from the user's search query and AI's assessment
+  const determineSearchCommitmentLevel = (userQuery: string, aiResponse: string): 'low' | 'medium' | 'high' | undefined => {
+    const lowerQuery = userQuery.toLowerCase();
     const lowerResponse = aiResponse.toLowerCase();
-    const lowerReasoning = reasoning.toLowerCase();
     
-    // Check for explicit commitment mentions in order of specificity
-    if (lowerResponse.includes('high commitment') || lowerResponse.includes('high-commitment') ||
-        lowerReasoning.includes('cofounder') || lowerReasoning.includes('co-founder') ||
-        lowerReasoning.includes('long-term partner') || lowerReasoning.includes('team member')) {
+    // First check the AI's explicit categorization (most reliable)
+    if (lowerResponse.includes('high commitment') || lowerResponse.includes('high-commitment')) {
+      return 'high';
+    }
+    if (lowerResponse.includes('medium commitment') || lowerResponse.includes('medium-commitment')) {
+      return 'medium';
+    }
+    if (lowerResponse.includes('low commitment') || lowerResponse.includes('low-commitment')) {
+      return 'low';
+    }
+    
+    // Then check user's query for commitment keywords
+    // High commitment indicators
+    if (lowerQuery.match(/\b(cofounder|co-founder|technical cofounder|business cofounder|team member|long-term partner|join.{0,20}team)\b/)) {
       return 'high';
     }
     
-    if (lowerResponse.includes('medium commitment') || lowerResponse.includes('medium-commitment') ||
-        lowerReasoning.includes('advisor') || lowerReasoning.includes('advising') ||
-        lowerReasoning.includes('ongoing') || lowerReasoning.includes('regular collaboration')) {
+    // Medium commitment indicators
+    if (lowerQuery.match(/\b(advisor|mentor|advising|ongoing|project collaborat|regular help|service provider|beta test)\b/)) {
       return 'medium';
     }
     
-    if (lowerResponse.includes('low commitment') || lowerResponse.includes('low-commitment') ||
-        lowerReasoning.includes('introduction') || lowerReasoning.includes('quick consultation') ||
-        lowerReasoning.includes('coffee chat') || lowerReasoning.includes('one-time')) {
+    // Low commitment indicators
+    if (lowerQuery.match(/\b(introduction|connect me|coffee|quick consultation|30 min|one-time|advice|networking)\b/)) {
       return 'low';
     }
     
@@ -362,17 +369,18 @@ export default function ChatPage() {
             return parsedProfile;
           });
           
+          // Determine the commitment level for this search (applies to all matches)
+          const searchCommitmentLevel = determineSearchCommitmentLevel(input, receivedText);
+          console.log(`Search commitment level for query "${input}": ${searchCommitmentLevel}`);
+          
           // Create match cards with reasoning from AI
           const matchCards: MatchCard[] = enrichedPeople.map((profile, index) => {
             const reasoning = matchedPeople[index].background; // Use AI's reasoning from parsed response
-            // Extract commitment level from AI's response context
-            const commitmentLevel = extractCommitmentFromReasoning(reasoning, receivedText);
-            console.log(`Profile ${profile.name}: commitment level = ${commitmentLevel} (extracted from AI reasoning)`);
             return {
               profile,
               reasoning,
               relevanceScore: 95 - (index * 5),
-              commitmentLevel
+              commitmentLevel: searchCommitmentLevel // Use the search-level commitment
             };
           });
 
@@ -388,14 +396,13 @@ export default function ChatPage() {
           );
         } else {
           // Fallback if database fetch fails
+          const searchCommitmentLevel = determineSearchCommitmentLevel(input, receivedText);
           const matchCards: MatchCard[] = matchedPeople.map((profile, index) => {
-            const reasoning = profile.background;
-            const commitmentLevel = extractCommitmentFromReasoning(reasoning, receivedText);
             return {
               profile,
-              reasoning,
+              reasoning: profile.background,
               relevanceScore: 95 - (index * 5),
-              commitmentLevel
+              commitmentLevel: searchCommitmentLevel
             };
           });
           setCurrentMatches(matchCards);
