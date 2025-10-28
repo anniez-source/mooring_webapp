@@ -13,7 +13,6 @@ const supabase = createClient(
 type CommitmentItem = {
   commitment: 'high' | 'medium' | 'low';
   type: string;
-  detail?: string;
 };
 
 export default function OnboardingModal() {
@@ -32,14 +31,6 @@ export default function OnboardingModal() {
   const [errors, setErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
-  
-  // Track "Other" text inputs
-  const [lookingForOtherText, setLookingForOtherText] = useState<{[key: string]: string}>({
-    high: '', medium: '', low: ''
-  });
-  const [openToOtherText, setOpenToOtherText] = useState<{[key: string]: string}>({
-    high: '', medium: '', low: ''
-  });
 
   // Expandable sections state
   const [expandedLookingFor, setExpandedLookingFor] = useState<{[key: string]: boolean}>({
@@ -67,48 +58,6 @@ export default function OnboardingModal() {
         return prev.filter(item => !(item.commitment === commitment && item.type === type));
       } else {
         return [...prev, { commitment, type }];
-      }
-    });
-  };
-
-  const handleLookingForOther = (commitment: 'high' | 'medium' | 'low', text: string) => {
-    setLookingForOtherText(prev => ({ ...prev, [commitment]: text }));
-    
-    setLookingFor(prev => {
-      const exists = prev.find(item => item.commitment === commitment && item.type === 'other');
-      const trimmedText = text.trim();
-      
-      if (!trimmedText) {
-        return prev.filter(item => !(item.commitment === commitment && item.type === 'other'));
-      } else if (exists) {
-        return prev.map(item =>
-          item.commitment === commitment && item.type === 'other'
-            ? { ...item, detail: trimmedText }
-            : item
-        );
-      } else {
-        return [...prev, { commitment, type: 'other', detail: trimmedText }];
-      }
-    });
-  };
-
-  const handleOpenToOther = (commitment: 'high' | 'medium' | 'low', text: string) => {
-    setOpenToOtherText(prev => ({ ...prev, [commitment]: text }));
-    
-    setOpenTo(prev => {
-      const exists = prev.find(item => item.commitment === commitment && item.type === 'other');
-      const trimmedText = text.trim();
-      
-      if (!trimmedText) {
-        return prev.filter(item => !(item.commitment === commitment && item.type === 'other'));
-      } else if (exists) {
-        return prev.map(item =>
-          item.commitment === commitment && item.type === 'other'
-            ? { ...item, detail: trimmedText }
-            : item
-        );
-      } else {
-        return [...prev, { commitment, type: 'other', detail: trimmedText }];
       }
     });
   };
@@ -156,7 +105,7 @@ export default function OnboardingModal() {
           return;
         }
 
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileData, error: profileError} = await supabase
           .from('profiles')
           .select('background, expertise, looking_for, open_to, opted_in')
           .eq('user_id', userData.user_id)
@@ -194,24 +143,6 @@ export default function OnboardingModal() {
     if (openTo.length === 0) {
       newErrors.push('Please select at least one thing you\'re open to');
     }
-    
-    // Validate "Other" selections have detail text (min 10 chars)
-    const lookingForOther = lookingFor.filter(item => item.type === 'other');
-    for (const item of lookingForOther) {
-      if (!item.detail || item.detail.length < 10) {
-        newErrors.push('Please provide details for "Other" selections (minimum 10 characters)');
-        break;
-      }
-    }
-    
-    const openToOther = openTo.filter(item => item.type === 'other');
-    for (const item of openToOther) {
-      if (!item.detail || item.detail.length < 10) {
-        newErrors.push('Please provide details for "Other" selections (minimum 10 characters)');
-        break;
-      }
-    }
-    
     if (!consent) {
       newErrors.push('Please consent to being included in matching results');
     }
@@ -312,9 +243,7 @@ export default function OnboardingModal() {
     expertiseOffering.length >= 150 &&
     lookingFor.length > 0 &&
     openTo.length > 0 &&
-    consent &&
-    lookingFor.filter(item => item.type === 'other').every(item => item.detail && item.detail.length >= 10) &&
-    openTo.filter(item => item.type === 'other').every(item => item.detail && item.detail.length >= 10);
+    consent;
 
   const handleSkip = async () => {
     if (!user) return;
@@ -376,160 +305,120 @@ export default function OnboardingModal() {
 
   const CommitmentSection = ({
     title,
+    subtitle,
     commitment,
     icon,
     bgColor,
     options,
     selectedItems,
     onToggle,
-    otherText,
-    onOtherChange,
     expanded,
     onToggleExpand
   }: {
     title: string;
+    subtitle: string;
     commitment: 'high' | 'medium' | 'low';
     icon: string;
     bgColor: string;
     options: { type: string; label: string }[];
     selectedItems: CommitmentItem[];
     onToggle: (commitment: 'high' | 'medium' | 'low', type: string) => void;
-    otherText: string;
-    onOtherChange: (commitment: 'high' | 'medium' | 'low', text: string) => void;
     expanded: boolean;
     onToggleExpand: () => void;
-  }) => {
-    const isOtherSelected = selectedItems.some(
-      item => item.commitment === commitment && item.type === 'other'
-    );
-
-    return (
-      <div className={`border-2 border-stone-200 rounded-lg overflow-hidden ${bgColor}`}>
-        <button
-          type="button"
-          onClick={onToggleExpand}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{icon}</span>
-            <span className="font-semibold text-stone-900 text-sm">{title}</span>
+  }) => (
+    <div className={`border-2 border-stone-200 rounded-lg overflow-hidden ${bgColor}`}>
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{icon}</span>
+          <div className="text-left">
+            <div className="font-semibold text-stone-900 text-sm">{title}</div>
+            <div className="text-xs text-stone-500">{subtitle}</div>
           </div>
-          <span className="text-stone-500 text-sm">{expanded ? '▼' : '▶'}</span>
-        </button>
-        
-        {expanded && (
-          <div className="px-4 pb-4 space-y-2">
-            {options.map(option => {
-              const isChecked = selectedItems.some(
-                item => item.commitment === commitment && item.type === option.type
-              );
-              return (
-                <label
-                  key={option.type}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded cursor-pointer transition-all ${
-                    isChecked
-                      ? 'bg-teal-50 border border-teal-500'
-                      : 'bg-white border border-stone-200 hover:border-teal-400'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => onToggle(commitment, option.type)}
-                    className="h-4 w-4 text-teal-600 focus:ring-2 focus:ring-teal-500 rounded border-stone-300 cursor-pointer"
-                  />
-                  <span className={`text-sm ${isChecked ? 'text-teal-900 font-medium' : 'text-stone-700'}`}>
-                    {option.label}
-                  </span>
-                </label>
-              );
-            })}
-            
-            {/* Other option with inline text input */}
-            <div
-              className={`px-3 py-2.5 rounded border transition-all ${
-                isOtherSelected
-                  ? 'bg-teal-50 border-teal-500'
-                  : 'bg-white border-stone-200'
-              }`}
-            >
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isOtherSelected}
-                    onChange={() => {
-                      if (isOtherSelected) {
-                        onOtherChange(commitment, '');
-                      }
-                    }}
-                    className="h-4 w-4 text-teal-600 focus:ring-2 focus:ring-teal-500 rounded border-stone-300 cursor-pointer"
-                  />
-                  <span className={`text-sm ${isOtherSelected ? 'text-teal-900 font-medium' : 'text-stone-700'}`}>
-                    Other (please specify)
-                  </span>
-                </label>
-                {isOtherSelected && (
-                  <input
-                    type="text"
-                    value={otherText}
-                    onChange={(e) => onOtherChange(commitment, e.target.value)}
-                    placeholder="Describe what you're looking for..."
-                    className="w-full px-3 py-2 border border-stone-300 rounded focus:outline-none focus:border-teal-600 text-sm"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
+        </div>
+        <span className="text-stone-500 text-sm">{expanded ? '▼' : '▶'}</span>
+      </button>
+      
+      {expanded && (
+        <div className="px-4 pb-4 space-y-2">
+          {options.map(option => {
+            const isChecked = selectedItems.some(
+              item => item.commitment === commitment && item.type === option.type
+            );
+            return (
+              <label
+                key={option.type}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded cursor-pointer transition-all ${
+                  isChecked
+                    ? 'bg-teal-50 border border-teal-500'
+                    : 'bg-white border border-stone-200 hover:border-teal-400'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => onToggle(commitment, option.type)}
+                  className="h-4 w-4 text-teal-600 focus:ring-2 focus:ring-teal-500 rounded border-stone-300 cursor-pointer"
+                />
+                <span className={`text-sm ${isChecked ? 'text-teal-900 font-medium' : 'text-stone-700'}`}>
+                  {option.label}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 
   // Options for each commitment level
   const lookingForHighOptions = [
     { type: 'technical_cofounder', label: 'Technical cofounder' },
     { type: 'business_cofounder', label: 'Business/operations cofounder' },
     { type: 'long_term_collaborator', label: 'Long-term project collaborator' },
-    { type: 'team_member', label: 'Team member (employee/contractor)' }
+    { type: 'team_member', label: 'Team member (employee/contractor)' },
+    { type: 'other', label: 'Other' }
   ];
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
     { type: 'project_collaborator', label: 'Project collaborator (specific project)' },
     { type: 'service_provider', label: 'Service provider (ongoing)' },
-    { type: 'beta_tester', label: 'Beta tester / design partner' }
+    { type: 'beta_tester', label: 'Beta tester / design partner' },
+    { type: 'other', label: 'Other' }
   ];
 
   const lookingForLowOptions = [
-    { type: 'customer_introduction', label: 'Customer/client introduction' },
-    { type: 'investor_introduction', label: 'Investor introduction' },
-    { type: 'expert_introduction', label: 'Expert introduction' },
+    { type: 'introduction', label: 'Introduction to someone specific' },
     { type: 'quick_consultation', label: 'Quick consultation (30 min)' },
     { type: 'coffee_chat', label: 'Coffee chat / networking' },
-    { type: 'event_coattendee', label: 'Event co-attendee' },
-    { type: 'one_time_service', label: 'One-time service need' }
+    { type: 'other', label: 'Other' }
   ];
 
   const openToHighOptions = [
     { type: 'being_technical_cofounder', label: 'Being a technical cofounder' },
     { type: 'being_business_cofounder', label: 'Being a business cofounder' },
     { type: 'long_term_collaboration', label: 'Long-term collaboration' },
-    { type: 'joining_team', label: 'Joining a team' }
+    { type: 'joining_team', label: 'Joining a team' },
+    { type: 'other', label: 'Other' }
   ];
 
   const openToMediumOptions = [
     { type: 'mentoring', label: 'Advising / mentoring' },
     { type: 'project_collaboration', label: 'Collaborating on projects' },
-    { type: 'providing_services', label: 'Providing services (design, dev, consulting)' },
-    { type: 'being_beta_tester', label: 'Being a beta tester' }
+    { type: 'providing_services', label: 'Providing services' },
+    { type: 'being_beta_tester', label: 'Being a beta tester' },
+    { type: 'other', label: 'Other' }
   ];
 
   const openToLowOptions = [
     { type: 'making_introductions', label: 'Making introductions' },
-    { type: 'providing_consultation', label: 'Providing quick consultations (30 min)' },
+    { type: 'offering_consultation', label: 'Offering quick consultations (30 min)' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'one_time_help', label: 'One-time help' }
+    { type: 'other', label: 'Other' }
   ];
 
   return (
@@ -547,7 +436,6 @@ export default function OnboardingModal() {
         <form onSubmit={handleSubmit} className="p-10 space-y-12">
           {/* Optional Profile Fields */}
           <div className="space-y-6 pb-8 border-b border-stone-200">
-            {/* Profile Photo Upload */}
             <div>
               <label className="block text-xs mb-2 text-stone-500">
                 Profile photo <span className="text-stone-400">(optional)</span>
@@ -572,7 +460,6 @@ export default function OnboardingModal() {
               </div>
             </div>
 
-            {/* LinkedIn URL */}
             <div>
               <label className="block text-xs mb-2 text-stone-500">
                 LinkedIn Profile <span className="text-stone-400">(optional)</span>
@@ -593,7 +480,7 @@ export default function OnboardingModal() {
             <h2 className="text-lg font-semibold text-stone-800" style={{ fontFamily: 'var(--font-ibm-plex)' }}>
               About You
             </h2>
-            {/* Background */}
+            
             <div>
               <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
                 What's your background? What have you built or worked on?
@@ -615,7 +502,6 @@ export default function OnboardingModal() {
               </p>
             </div>
 
-            {/* Expertise */}
             <div>
               <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
                 What expertise do you have to offer?
@@ -653,40 +539,37 @@ export default function OnboardingModal() {
               <div className="space-y-3">
                 <CommitmentSection
                   title="High Commitment"
+                  subtitle="Long-term partnership, significant time investment"
                   commitment="high"
                   icon="🔥"
-                  bgColor="bg-red-50/30"
+                  bgColor="bg-red-50/20"
                   options={lookingForHighOptions}
                   selectedItems={lookingFor}
                   onToggle={toggleLookingFor}
-                  otherText={lookingForOtherText.high}
-                  onOtherChange={handleLookingForOther}
                   expanded={expandedLookingFor.high}
                   onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, high: !prev.high }))}
                 />
                 <CommitmentSection
                   title="Medium Commitment"
+                  subtitle="Ongoing relationship, regular interaction"
                   commitment="medium"
                   icon="🤝"
-                  bgColor="bg-amber-50/30"
+                  bgColor="bg-amber-50/20"
                   options={lookingForMediumOptions}
                   selectedItems={lookingFor}
                   onToggle={toggleLookingFor}
-                  otherText={lookingForOtherText.medium}
-                  onOtherChange={handleLookingForOther}
                   expanded={expandedLookingFor.medium}
                   onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, medium: !prev.medium }))}
                 />
                 <CommitmentSection
                   title="Low Commitment"
+                  subtitle="One-time help, quick interaction"
                   commitment="low"
                   icon="☕"
-                  bgColor="bg-teal-50/30"
+                  bgColor="bg-teal-50/20"
                   options={lookingForLowOptions}
                   selectedItems={lookingFor}
                   onToggle={toggleLookingFor}
-                  otherText={lookingForOtherText.low}
-                  onOtherChange={handleLookingForOther}
                   expanded={expandedLookingFor.low}
                   onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, low: !prev.low }))}
                 />
@@ -712,40 +595,37 @@ export default function OnboardingModal() {
               <div className="space-y-3">
                 <CommitmentSection
                   title="High Commitment"
+                  subtitle="Long-term partnership, significant time investment"
                   commitment="high"
                   icon="🔥"
-                  bgColor="bg-red-50/30"
+                  bgColor="bg-red-50/20"
                   options={openToHighOptions}
                   selectedItems={openTo}
                   onToggle={toggleOpenTo}
-                  otherText={openToOtherText.high}
-                  onOtherChange={handleOpenToOther}
                   expanded={expandedOpenTo.high}
                   onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, high: !prev.high }))}
                 />
                 <CommitmentSection
                   title="Medium Commitment"
+                  subtitle="Ongoing relationship, regular interaction"
                   commitment="medium"
                   icon="🤝"
-                  bgColor="bg-amber-50/30"
+                  bgColor="bg-amber-50/20"
                   options={openToMediumOptions}
                   selectedItems={openTo}
                   onToggle={toggleOpenTo}
-                  otherText={openToOtherText.medium}
-                  onOtherChange={handleOpenToOther}
                   expanded={expandedOpenTo.medium}
                   onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, medium: !prev.medium }))}
                 />
                 <CommitmentSection
                   title="Low Commitment"
+                  subtitle="One-time help, quick interaction"
                   commitment="low"
                   icon="☕"
-                  bgColor="bg-teal-50/30"
+                  bgColor="bg-teal-50/20"
                   options={openToLowOptions}
                   selectedItems={openTo}
                   onToggle={toggleOpenTo}
-                  otherText={openToOtherText.low}
-                  onOtherChange={handleOpenToOther}
                   expanded={expandedOpenTo.low}
                   onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, low: !prev.low }))}
                 />
