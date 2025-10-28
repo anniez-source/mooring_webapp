@@ -213,7 +213,6 @@ export default function SavedContactsPage() {
       // Open To - Low Commitment
       'making_introductions': 'Making introductions',
       'offering_consultation': 'Offering quick consultations (30 min)',
-      'coffee_chats': 'Coffee chats / networking',
       // Other
       'other': 'Other'
     };
