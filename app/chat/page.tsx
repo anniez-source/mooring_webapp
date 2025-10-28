@@ -213,7 +213,7 @@ export default function ChatPage() {
     // Format 3: **Name**\n📧 email\n💼 linkedin\n\nWhy relevant: ... (bold but no program)
     
     // Updated regex that stops at the next person entry or section dividers
-    const personRegex = /(?:\*\*)?([A-Z][^\n*]+?)(?:\*\*)?(?: - ([^\n]+))?\n📧\s*([^\n]+)\n💼\s*([^\n]+)\n\nWhy relevant[.:]?\s*([^]+?)(?=\n\n(?:\*\*?[A-Z]|Assessment|Suggested approach|$)|$)/gis;
+    const personRegex = /(?:\*\*)?([A-Z][^\n*]+?)(?:\*\*)?(?: - ([^\n]+))?\n📧\s*([^\n]+)\n💼\s*([^\n]+)\n\nWhy relevant[.:]?\s*([^]+?)(?=\n\n(?:\*\*?[A-Z]|Assessment|Suggested approach|$)|$)/gi;
     let match;
 
     console.log('=== Parsing AI Response ===');
