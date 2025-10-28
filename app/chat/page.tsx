@@ -201,8 +201,8 @@ export default function ChatPage() {
     // Format 2: Name\n📧 email\n💼 linkedin\n\nWhy relevant: ... (no bold, no program)
     // Format 3: **Name**\n📧 email\n💼 linkedin\n\nWhy relevant: ... (bold but no program)
     
-    // Updated regex that's more flexible with ending conditions
-    const personRegex = /(?:\*\*)?([A-Z][^\n*]+?)(?:\*\*)?(?: - ([^\n]+))?\n📧\s*([^\n]+)\n💼\s*([^\n]+)\n\nWhy relevant[.:]?\s*([^]+?)(?=\n\n(?:Assessment|Suggested approach|$)|$)/gis;
+    // Updated regex that stops at the next person entry or section dividers
+    const personRegex = /(?:\*\*)?([A-Z][^\n*]+?)(?:\*\*)?(?: - ([^\n]+))?\n📧\s*([^\n]+)\n💼\s*([^\n]+)\n\nWhy relevant[.:]?\s*([^]+?)(?=\n\n(?:\*\*?[A-Z]|Assessment|Suggested approach|$)|$)/gis;
     let match;
 
     console.log('=== Parsing AI Response ===');
