@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { useUser, useAuth } from '@clerk/nextjs';
@@ -81,6 +81,7 @@ export default function ChatPage() {
   });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sendMessageRef = useRef<((messageOverride?: string) => Promise<void>) | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -412,14 +413,16 @@ export default function ChatPage() {
     return { text, people };
   };
 
-    const handleInterestSelect = (interest: { commitment: string; type: string }) => {
+    const handleInterestSelect = async (interest: { commitment: string; type: string }) => {
       const questions = contextQuestions[interest.type] || [];
       
       if (questions.length === 0) {
         // No context questions, search immediately
         const query = `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}`;
         setInput(query);
-        sendMessage(query);
+        if (sendMessageRef.current) {
+          await sendMessageRef.current(query);
+        }
         return;
       }
       
@@ -509,7 +512,9 @@ export default function ChatPage() {
         setInput('');
         
         // Execute search
-        await sendMessage(richQuery);
+        if (sendMessageRef.current) {
+          await sendMessageRef.current(richQuery);
+        }
         
         // Reset conversation state
         setConversationState('results');
@@ -770,6 +775,9 @@ Please find matches who can help with this specific context.`;
       setIsLoading(false);
     }
   };
+
+  // Assign sendMessage to ref so it can be called from other functions
+  sendMessageRef.current = sendMessage;
 
   const handleQuickSearch = (item: { commitment: string; type: string }) => {
     // Use the new multi-step flow instead of immediate search
