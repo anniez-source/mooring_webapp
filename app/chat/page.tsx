@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { useUser, useAuth } from '@clerk/nextjs';
@@ -47,15 +47,20 @@ export default function ChatPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
   const { isSignedIn } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([{
+    id: '1',
+    role: 'assistant',
+    content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
+    timestamp: new Date()
+  }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentMatches, setCurrentMatches] = useState<MatchCard[]>([]);
-  const [displayIndex, setDisplayIndex] = useState(0); // Track which 3 matches to show
+  const [displayIndex, setDisplayIndex] = useState(0);
   const [savedProfiles, setSavedProfiles] = useState<Set<string>>(new Set());
   const [conversationComplete, setConversationComplete] = useState(false);
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
-  const [matchesWidth, setMatchesWidth] = useState(384); // Default width in px (w-96)
+  const [matchesWidth, setMatchesWidth] = useState(384);
   const [isResizing, setIsResizing] = useState(false);
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<{
@@ -67,21 +72,7 @@ export default function ChatPage() {
     open_to: Array<{ commitment: string; type: string }>;
   } | null>(null);
   
-  // Conversation state for multi-step search flow
-  type ConversationState = 'initial' | 'gathering_context' | 'searching' | 'results';
-  const [conversationState, setConversationState] = useState<ConversationState>('initial');
-  const [searchContext, setSearchContext] = useState<{
-    selectedInterest: { commitment: string; type: string } | null;
-    collectedContext: Record<string, string>;
-    currentQuestion: number;
-  }>({
-    selectedInterest: null,
-    collectedContext: {},
-    currentQuestion: 0
-  });
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const sendMessageRef = useRef<((messageOverride?: string) => Promise<void>) | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -98,133 +89,66 @@ export default function ChatPage() {
       return;
     }
     
-    // Sync user to Supabase when they log in
-    async function syncUser() {
-      if (!isSignedIn || !user) {
-        console.log('[Chat] User not signed in');
-        return;
-      }
-      
-      console.log('[Chat] Syncing user:', user.id);
-      
-      try {
-        // Check if user exists in users table
-        const { data: existingUser, error: userFetchError} = await supabase
-          .from('users')
-          .select('user_id')
-          .eq('clerk_user_id', user.id)
-          .maybeSingle();
-        
-        if (userFetchError) {
-          console.error('[Chat] Error fetching user:', userFetchError);
-          return;
-        }
-        
-        // If user doesn't exist in users table, create them
-        if (!existingUser) {
-          console.log('[Chat] User not found, creating new user record');
-          const { data: newUser, error: userInsertError } = await supabase
-            .from('users')
-            .insert({
-              clerk_user_id: user.id,
-              email: user.emailAddresses[0]?.emailAddress || '',
-              name: user.fullName || user.firstName || 'User'
-            })
-            .select('user_id')
-            .single();
-          
-          if (userInsertError) {
-            // Note: This error often occurs due to RLS policies blocking .select() after .insert()
-            // The INSERT usually succeeds, but we can't read it back immediately
-            // Run fix_users_table_permissions.sql to resolve this
-            
-            if (userInsertError.code === '23505') {
-              console.log('[Chat] User already exists (duplicate key)');
-            } else {
-              console.log('[Chat] User insert completed (SELECT blocked by RLS - this is OK, user was created)');
-              console.log('[Chat] To fix: Run fix_users_table_permissions.sql in Supabase');
-            }
-          } else {
-            console.log('[Chat] User created successfully:', newUser?.user_id);
-          }
-        } else {
-          console.log('[Chat] User already exists:', existingUser.user_id);
-        }
-        
-        // OnboardingModal will handle profile completion check
-      } catch (error) {
-        console.error('[Chat] Error syncing user:', error);
-      }
-    }
-    
-    if (isSignedIn && user) {
-      syncUser();
-    }
-    
-    if (isSignedIn && messages.length === 0) {
-      // Add welcome message only once
-      setMessages([{
-        id: '1',
-        role: 'assistant',
-        content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
-        timestamp: new Date()
-      }]);
-    }
-  }, [router, isLoaded, isSignedIn, messages.length, user]);
-
-  // Fetch user's profile interests on page load
-  useEffect(() => {
-    async function fetchUserProfile() {
-      if (!isSignedIn || !user) return;
-
-      try {
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('user_id')
-          .eq('clerk_user_id', user.id)
-          .maybeSingle();
-
-        if (userError || !userData) {
-          console.error('[Chat] Error fetching user:', userError);
-          return;
-        }
-
-        const { data: profileData, error: profileError } = await supabase
+    // Initialize welcome message and load saved profiles
+    if (isSignedIn && user?.primaryEmailAddress) {
+      // Load user profile
+      const fetchUserProfile = async () => {
+        const { data, error } = await supabase
           .from('profiles')
           .select('name, background, working_on, expertise, looking_for, open_to')
-          .eq('user_id', userData.user_id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error('[Chat] Error fetching profile:', profileError);
-          return;
-        }
-
-        if (profileData) {
+          .eq('email', user.primaryEmailAddress!.emailAddress)
+          .single();
+        
+        if (data) {
           setUserProfile({
-            name: profileData.name || '',
-            background: profileData.background || '',
-            working_on: profileData.working_on || '',
-            expertise: profileData.expertise || '',
-            looking_for: profileData.looking_for || [],
-            open_to: profileData.open_to || []
+            name: data.name || '',
+            background: data.background,
+            working_on: data.working_on,
+            expertise: data.expertise,
+            looking_for: data.looking_for || [],
+            open_to: data.open_to || []
           });
         }
-      } catch (error) {
-        console.error('[Chat] Error fetching user profile:', error);
-      }
+      };
+
+      fetchUserProfile();
+
+      // Load saved profiles
+      supabase
+        .from('saved_collaborators')
+        .select('saved_profile_id')
+        .eq('user_id', user.id)
+        .then(({ data }) => {
+          if (data) {
+            setSavedProfiles(new Set(data.map(item => item.saved_profile_id)));
+          }
+        });
     }
+  }, [isLoaded, isSignedIn, user, router]);
 
-    fetchUserProfile();
-  }, [isSignedIn, user]);
+  useEffect(() => {
+    if (isResizing) {
+      const handleMouseMove = (e: MouseEvent) => {
+        const newWidth = Math.max(300, Math.min(800, e.clientX));
+        setMatchesWidth(newWidth);
+      };
 
-  const formatMessageContent = (content: string) => {
-    // Convert markdown-style formatting to HTML
-    return content
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-stone-900">$1</strong>') // Bold text with color
-      .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic text
-      .replace(/\n/g, '<br>'); // Line breaks
-  };
+      const handleMouseUp = () => {
+        setIsResizing(false);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing]);
 
   const formatLookingForLabel = (type: string): string => {
     const labels: Record<string, string> = {
@@ -234,8 +158,9 @@ export default function ChatPage() {
       'domain_expert_cofounder': 'Domain expert cofounder',
       'founding_team_member': 'Founding team member',
       // Medium commitment - looking for
-      'advisor': 'Advisor or mentor',
-      'service_provider': 'Receiving paid services',
+      'advisor': 'Advisor / mentor',
+      'project_collaborator': 'Project collaborator',
+      'receiving_paid_services': 'Receiving paid services',
       'beta_tester': 'Beta tester',
       // Low commitment - looking for
       'introduction': 'Introductions',
@@ -247,321 +172,58 @@ export default function ChatPage() {
     return labels[type] || type.replace(/_/g, ' ');
   };
 
-  // Context questions for each interest type
-  const contextQuestions: Record<string, string[]> = {
-    'technical_cofounder': [
-      "What specific technical skills do you need? (e.g., backend, ML, mobile, frontend)",
-      "What stage is your project? (idea, building MVP, have users, have revenue)",
-      "Any domain expertise needed? (healthcare, climate, fintech, etc.)"
-    ],
-    'business_cofounder': [
-      "What business functions do you need? (sales, marketing, operations, fundraising)",
-      "What industry experience matters? (B2B SaaS, marketplace, hardware, etc.)",
-      "Project stage? (idea, building, have users, revenue)"
-    ],
-    'domain_expert_cofounder': [
-      "What specific domain expertise do you need?",
-      "Project stage? (idea, building, have users, revenue)",
-      "Any other requirements?"
-    ],
-    'founding_team_member': [
-      "What role or skills are you looking for?",
-      "Project stage? (idea, building, have users, revenue)",
-      "Full-time or part-time to start?"
-    ],
-    'advisor': [
-      "What area do you need advice on? (GTM, product, fundraising, technical, etc.)",
-      "How often would you want to meet? (weekly, monthly, as-needed)"
-    ],
-    'service_provider': [
-      "What specific services do you need?",
-      "What's your budget and timeline?"
-    ],
-    'beta_tester': [
-      "What type of product/service needs testing?",
-      "What specific feedback are you looking for?"
-    ],
-    'introduction': [
-      "Who are you trying to connect with? (specific person, type of person, or organization)",
-      "What's the purpose of the introduction?"
-    ],
-    'coffee_chats': [
-      "What would you like to discuss or learn about?"
-    ],
-    'feedback': [
-      "What specifically do you need feedback on? (idea, product, pitch, strategy, etc.)",
-      "What domain/expertise are you looking for in the feedback provider?"
-    ]
-  };
-
-  const getQuestionKeys = (type: string): string[] => {
-    const keys: Record<string, string[]> = {
-      'technical_cofounder': ['technicalSkills', 'projectStage', 'domain'],
-      'business_cofounder': ['businessFunctions', 'industryExperience', 'projectStage'],
-      'domain_expert_cofounder': ['domainExpertise', 'projectStage', 'otherRequirements'],
-      'founding_team_member': ['roleSkills', 'projectStage', 'commitment'],
-      'advisor': ['adviceArea', 'meetingFrequency'],
-      'service_provider': ['services', 'budgetTimeline'],
-      'beta_tester': ['productType', 'feedbackNeeded'],
-      'introduction': ['targetPerson', 'purpose'],
-      'coffee_chats': ['discussionTopic'],
-      'feedback': ['specificFeedback', 'domainExpertise']
-    };
-    return keys[type] || ['general'];
-  };
-
-  // Helper function to determine commitment level from the user's search query and AI's assessment
   const determineSearchCommitmentLevel = (userQuery: string, aiResponse: string): 'low' | 'medium' | 'high' | undefined => {
     const lowerQuery = userQuery.toLowerCase();
     const lowerResponse = aiResponse.toLowerCase();
     
-    console.log('=== DETERMINING COMMITMENT LEVEL ===');
-    console.log('User query:', userQuery);
-    console.log('AI response (first 200 chars):', aiResponse.substring(0, 200));
+    // First check the AI's explicit categorization
+    if (lowerResponse.includes('high commitment') || lowerResponse.includes('high-commitment')) return 'high';
+    if (lowerResponse.includes('medium commitment') || lowerResponse.includes('medium-commitment')) return 'medium';
+    if (lowerResponse.includes('low commitment') || lowerResponse.includes('low-commitment')) return 'low';
     
-    // First check the AI's explicit categorization (most reliable)
-    if (lowerResponse.includes('high commitment') || lowerResponse.includes('high-commitment')) {
-      console.log('Found HIGH commitment in AI response');
-      return 'high';
-    }
-    if (lowerResponse.includes('medium commitment') || lowerResponse.includes('medium-commitment')) {
-      console.log('Found MEDIUM commitment in AI response');
-      return 'medium';
-    }
-    if (lowerResponse.includes('low commitment') || lowerResponse.includes('low-commitment')) {
-      console.log('Found LOW commitment in AI response');
-      return 'low';
-    }
+    // Check user's query for commitment keywords
+    if (lowerQuery.match(/\b(cofounder|co-?founder|technical|business|team member|long-?term partner|join.{0,20}team|partner)\b/)) return 'high';
+    if (lowerQuery.match(/\b(advisor|mentor|advising|mentoring|ongoing|project collaborat|regular help|service provider|beta test)\b/)) return 'medium';
+    if (lowerQuery.match(/\b(introduction|intro|connect me|coffee|quick consultation|30 min|one-?time|advice|networking)\b/)) return 'low';
     
-    // Then check user's query for commitment keywords
-    // High commitment indicators
-    if (lowerQuery.match(/\b(cofounder|co-?founder|technical|business|team member|long-?term partner|join.{0,20}team|partner)\b/)) {
-      console.log('Matched HIGH commitment keywords in query');
-      return 'high';
-    }
-    
-    // Medium commitment indicators
-    if (lowerQuery.match(/\b(advisor|mentor|advising|mentoring|ongoing|project collaborat|regular help|service provider|beta test)\b/)) {
-      console.log('Matched MEDIUM commitment keywords in query');
-      return 'medium';
-    }
-    
-    // Low commitment indicators
-    if (lowerQuery.match(/\b(introduction|intro|connect me|coffee|quick consultation|30 min|one-?time|advice|networking)\b/)) {
-      console.log('Matched LOW commitment keywords in query');
-      return 'low';
-    }
-    
-    console.log('Could not determine commitment level - returning undefined');
     return undefined;
   };
 
-  const parseAssistantResponse = (rawContent: string): { text: string; people: Profile[] } => {
-    const people: Profile[] = [];
+  const parseAssistantResponse = (rawContent: string): { text: string, people: Profile[] } => {
+    // [Keep existing parseAssistantResponse implementation]
     let text = rawContent;
+    const people: Profile[] = [];
 
-    // More flexible regex to handle various AI response formats:
-    // Format 1: **Name** - Program\n📧 email\n💼 linkedin\n\nWhy relevant: ...
-    // Format 2: Name\n📧 email\n💼 linkedin\n\nWhy relevant: ... (no bold, no program)
-    // Format 3: **Name**\n📧 email\n💼 linkedin\n\nWhy relevant: ... (bold but no program)
+    const personRegex = /\*\*?(\d+)\.\s*\*?\*?([^*\n]+?)\s*\*?\*?(?:\s*-\s*(.+?))?\s*Email:\s*([^\s]+)(?:\s+LinkedIn:\s*([^\n]+))?\s*Why relevant[.:]?\s*(.+?)(?=\n\*\*?\d+\.|Assessment:|Suggested approach:|---+|\n\n[A-Z]|$)/gi;
     
-    // Updated regex that stops at the next person entry or section dividers
-    const personRegex = /(?:\*\*)?([A-Z][^\n*]+?)(?:\*\*)?(?: - ([^\n]+))?\n📧\s*([^\n]+)\n💼\s*([^\n]+)\n\nWhy relevant[.:]?\s*([^]+?)(?=\n\n(?:\*\*?[A-Z]|Assessment|Suggested approach|$)|$)/gi;
     let match;
-
-    console.log('=== Parsing AI Response ===');
-    console.log('Full response to parse:', rawContent);
-
     while ((match = personRegex.exec(rawContent)) !== null) {
-      const [fullMatch, name, ms_program, email, linkedin_url, reasoning] = match;
-      
-      console.log('Found person:', {
-        name: name.trim(),
+      const [, , name, program, email, linkedin, relevance] = match;
+      people.push({
+        id: email.trim().toLowerCase(),
+        name: name.trim().replace(/\*\*/g, ''),
+        ms_program: program ? program.trim() : 'Member',
         email: email.trim(),
-        program: ms_program ? ms_program.trim() : 'Member'
-      });
-
-      // Create a dummy profile for display
-      const dummyProfile: Profile = {
-        id: `temp-${name.replace(/\s/g, '-')}`,
-        name: name.trim(),
-        ms_program: ms_program ? ms_program.trim() : 'Member', // Default if no program provided
-        email: email.trim(),
-        linkedin_url: linkedin_url.trim() === 'No LinkedIn provided' ? '' : linkedin_url.trim(),
-        background: reasoning.trim(),
+        linkedin_url: linkedin ? linkedin.trim() : '',
+        background: relevance.trim(),
         working_on: '',
         interests: '',
         expertise: '',
         looking_for: [],
-        open_to: [],
-      };
-      people.push(dummyProfile);
-
-      // Remove the person block from the text content
-      text = text.replace(fullMatch, '');
+        open_to: []
+      });
     }
 
-    console.log(`Total people parsed: ${people.length}`);
-
-    // Remove intro lines like "I found X people..." and "---" separators
-    text = text.replace(/^I found .+?:\s*/i, ''); // Remove intro line
-    text = text.replace(/---+/g, ''); // Remove all --- separators
-    
-    // Clean up any extra newlines or spaces left from removing blocks
+    // Remove parsed person entries from text
+    text = text.replace(personRegex, '');
+    text = text.replace(/^I found .+?:\s*/i, '');
+    text = text.replace(/---+/g, '');
     text = text.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
 
     return { text, people };
   };
 
-  const handleInterestSelect = async (interest: { commitment: string; type: string }) => {
-    const questions = contextQuestions[interest.type] || [];
-    
-    if (questions.length === 0) {
-      // No context questions, search immediately
-      const query = `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}`;
-      setInput(query);
-      if (sendMessageRef.current) {
-        await sendMessageRef.current(query);
-      }
-      return;
-    }
-    
-    // Start context gathering flow
-    setSearchContext({
-      selectedInterest: interest,
-      collectedContext: {},
-      currentQuestion: 0
-    });
-    setConversationState('gathering_context');
-    
-    // Add system message with first question
-    const firstQuestion = questions[0];
-    const systemMessage: Message = {
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: `Great! You're looking for ${formatLookingForLabel(interest.type).toLowerCase()}.\n\n${userProfile?.working_on ? `You're currently working on: "${userProfile.working_on}"\n\n` : ''}To find the best match:\n\n${firstQuestion}`,
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, systemMessage]);
-    setInput('');
-  };
-
-  const handleContextResponse = async (response: string) => {
-    if (!response.trim()) return;
-    
-    const { selectedInterest, currentQuestion, collectedContext } = searchContext;
-    if (!selectedInterest) return;
-    
-    // Add user's response to messages
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: response,
-      timestamp: new Date()
-    };
-    setMessages(prev => [...prev, userMessage]);
-    
-    // Store the response
-    const questionKeys = getQuestionKeys(selectedInterest.type);
-    const questionKey = questionKeys[currentQuestion] || `question_${currentQuestion}`;
-    const updatedContext = {
-      ...collectedContext,
-      [questionKey]: response
-    };
-    
-    const questions = contextQuestions[selectedInterest.type] || [];
-    
-    // Check if more questions
-    if (currentQuestion + 1 < questions.length) {
-      // Ask next question
-      setSearchContext({
-        ...searchContext,
-        collectedContext: updatedContext,
-        currentQuestion: currentQuestion + 1
-      });
-      
-      const nextQuestion = questions[currentQuestion + 1];
-      const systemMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: nextQuestion,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, systemMessage]);
-      setInput('');
-    } else {
-      // Done gathering context, execute search
-      setSearchContext({
-        ...searchContext,
-        collectedContext: updatedContext
-      });
-      setConversationState('searching');
-      
-      // Show what we're searching for
-      const contextSummary = Object.values(updatedContext).map(v => `• ${v}`).join('\n');
-      const searchMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `Got it! Searching for ${formatLookingForLabel(selectedInterest.type).toLowerCase()} with:\n${contextSummary}`,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, searchMessage]);
-      
-      // Build rich query from context
-      const richQuery = buildRichQuery(selectedInterest, updatedContext);
-      setInput('');
-      
-      // Execute search
-      if (sendMessageRef.current) {
-        await sendMessageRef.current(richQuery);
-      }
-      
-      // Reset conversation state
-      setConversationState('results');
-      setSearchContext({
-        selectedInterest: null,
-        collectedContext: {},
-        currentQuestion: 0
-      });
-    }
-  };
-
-  const buildRichQuery = (
-    interest: { commitment: string; type: string },
-    context: Record<string, string>
-  ): string => {
-    const contextDetails = Object.entries(context)
-      .map(([key, value]) => `- ${value}`)
-      .join('\n');
-    
-    return `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}.
-
-${userProfile?.background ? `My background: ${userProfile.background}\n\n` : ''}${userProfile?.working_on ? `Current work: ${userProfile.working_on}\n\n` : ''}Specific requirements:
-${contextDetails}
-
-Please find matches who can help with this specific context.`;
-  };
-
-  const startNewChat = () => {
-    setMessages([{
-      id: '1',
-      role: 'assistant',
-      content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
-      timestamp: new Date()
-    }]);
-    setCurrentMatches([]);
-    setDisplayIndex(0);
-    setSavedProfiles(new Set());
-    setConversationComplete(false);
-    setChatSessionId(null); // Reset session ID for new conversation
-    setConversationState('initial');
-    setSearchContext({
-      selectedInterest: null,
-      collectedContext: {},
-      currentQuestion: 0
-    });
-  };
-
+  // MAIN SEND MESSAGE FUNCTION - defined first so other functions can reference it
   const sendMessage = async (messageOverride?: string) => {
     const messageText = messageOverride || input.trim();
     if (!messageText || isLoading) return;
@@ -578,8 +240,7 @@ Please find matches who can help with this specific context.`;
       setInput('');
     }
     setIsLoading(true);
-    // Don't clear matches - they should persist unless new matches are found
-    setDisplayIndex(0); // Reset to start
+    setDisplayIndex(0);
 
     try {
       const conversationHistory = messages.map(msg => ({
@@ -613,7 +274,7 @@ Please find matches who can help with this specific context.`;
         body: JSON.stringify({
           message: userMessage.content,
           conversationHistory,
-          chatSessionId: chatSessionId, // Send session ID to API
+          chatSessionId: chatSessionId,
           userProfile: userProfile ? {
             name: userProfile.name,
             background: userProfile.background,
@@ -636,7 +297,7 @@ Please find matches who can help with this specific context.`;
       let receivedText = '';
       let assistantMessageId = (Date.now() + 1).toString();
 
-      // Add placeholder message immediately for better UX
+      // Add placeholder message immediately
       setMessages(prev => [...prev, {
         id: assistantMessageId,
         role: 'assistant',
@@ -655,15 +316,12 @@ Please find matches who can help with this specific context.`;
           if (line.startsWith('data: ')) {
             const data = JSON.parse(line.substring(6));
             
-            // Capture the real session ID when streaming completes
             if (data.done && data.chatSessionId) {
-              console.log('[Chat] Received chat session ID from API:', data.chatSessionId);
               setChatSessionId(data.chatSessionId);
             }
             
             if (data.text) {
               receivedText += data.text;
-              // Update the message in real-time
               setMessages(prev =>
                 prev.map(msg =>
                   msg.id === assistantMessageId ? { ...msg, content: receivedText } : msg
@@ -674,15 +332,9 @@ Please find matches who can help with this specific context.`;
         }
       }
 
-      // After streaming is complete, parse the full content and update the message
-      console.log('=== PARSING AI RESPONSE ===');
-      console.log('Full AI response:', receivedText);
+      // Parse and create match cards
       const { text: finalContent, people: matchedPeople } = parseAssistantResponse(receivedText);
       
-      console.log('Number of matched people:', matchedPeople.length);
-      console.log('Matched people:', matchedPeople);
-      
-      // Fetch full profile data from database to get real user_ids
       if (matchedPeople.length > 0) {
         const emails = matchedPeople.map(p => p.email);
         const { data: fullProfiles, error: profileError } = await supabase
@@ -691,13 +343,12 @@ Please find matches who can help with this specific context.`;
           .in('email', emails);
         
         if (!profileError && fullProfiles) {
-          // Match AI results with database profiles by email
           const enrichedPeople = matchedPeople.map(parsedProfile => {
             const dbProfile = fullProfiles.find(fp => fp.email === parsedProfile.email);
             if (dbProfile) {
               return {
                 ...parsedProfile,
-                id: dbProfile.user_id, // Use real user_id from database
+                id: dbProfile.user_id,
                 background: dbProfile.background,
                 expertise: dbProfile.expertise,
                 working_on: dbProfile.working_on || '',
@@ -709,59 +360,33 @@ Please find matches who can help with this specific context.`;
             return parsedProfile;
           });
           
-          // Determine the commitment level for this search (applies to all matches)
           const searchCommitmentLevel = determineSearchCommitmentLevel(input, receivedText);
-          console.log(`Search commitment level for query "${input}": ${searchCommitmentLevel}`);
           
-          // Create match cards with reasoning from AI
           const matchCards: MatchCard[] = enrichedPeople.map((profile, index) => {
-            const reasoning = matchedPeople[index].background; // Use AI's reasoning from parsed response
+            const reasoning = matchedPeople[index].background;
             return {
               profile,
               reasoning,
               relevanceScore: 95 - (index * 5),
-              commitmentLevel: searchCommitmentLevel // Use the search-level commitment
+              commitmentLevel: searchCommitmentLevel
             };
           });
 
-          console.log('Match cards created:', matchCards.length);
-          console.log('Match cards with commitment:', matchCards.map(m => ({ name: m.profile.name, level: m.commitmentLevel })));
           setCurrentMatches(matchCards);
           
-          // Update message with enriched profiles
           setMessages(prev =>
             prev.map(msg =>
               msg.id === assistantMessageId ? { ...msg, content: finalContent, people: enrichedPeople } : msg
             )
           );
-        } else {
-          // Fallback if database fetch fails
-          const searchCommitmentLevel = determineSearchCommitmentLevel(input, receivedText);
-          const matchCards: MatchCard[] = matchedPeople.map((profile, index) => {
-            return {
-              profile,
-              reasoning: profile.background,
-              relevanceScore: 95 - (index * 5),
-              commitmentLevel: searchCommitmentLevel
-            };
-          });
-          setCurrentMatches(matchCards);
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantMessageId ? { ...msg, content: finalContent, people: matchedPeople } : msg
-            )
-          );
         }
       } else {
-        // No people matched
         setMessages(prev =>
           prev.map(msg =>
             msg.id === assistantMessageId ? { ...msg, content: finalContent, people: matchedPeople } : msg
           )
         );
       }
-
-      // Don't mark as complete - allow users to keep searching
 
     } catch (error: any) {
       console.error('Error sending message:', error);
@@ -776,29 +401,21 @@ Please find matches who can help with this specific context.`;
     }
   };
 
-  // Assign sendMessage to ref so it can be called from other functions
-  sendMessageRef.current = sendMessage;
-
   const handleQuickSearch = (item: { commitment: string; type: string }) => {
-    // Use the new multi-step flow instead of immediate search
-    handleInterestSelect(item);
+    const query = `I'm looking for ${formatLookingForLabel(item.type).toLowerCase()}`;
+    setInput(query);
+    sendMessage(query);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (conversationState === 'gathering_context') {
-        handleContextResponse(input);
-      } else {
-        sendMessage();
-      }
+      sendMessage();
     }
   };
 
   const handleSaveProfile = async (profile: Profile, reasoning: string) => {
     try {
-      console.log('Saving profile:', { id: profile.id, name: profile.name, email: profile.email, sessionId: chatSessionId });
-      
       const response = await fetch('/api/save-collaborator', {
         method: 'POST',
         headers: {
@@ -813,12 +430,9 @@ Please find matches who can help with this specific context.`;
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Save failed:', errorData);
         throw new Error(errorData.error || 'Failed to save contact');
       }
 
-      const result = await response.json();
-      console.log('Save successful:', result);
       setSavedProfiles(prev => new Set([...prev, profile.id]));
     } catch (error: any) {
       console.error('Error saving contact:', error);
@@ -828,90 +442,69 @@ Please find matches who can help with this specific context.`;
 
   const handleEmailClick = async (profileId: string) => {
     try {
-      // Track email click in database
       await fetch('/api/track-click', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          savedProfileId: profileId,
-          clickType: 'email',
+          profileId,
+          actionType: 'email',
         }),
       });
     } catch (error) {
       console.error('Error tracking email click:', error);
-      // Don't block the user's action if tracking fails
     }
   };
 
   const handleLinkedInClick = async (profileId: string) => {
     try {
-      // Track LinkedIn click in database
       await fetch('/api/track-click', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          savedProfileId: profileId,
-          clickType: 'linkedin',
+          profileId,
+          actionType: 'linkedin',
         }),
       });
     } catch (error) {
       console.error('Error tracking LinkedIn click:', error);
-      // Don't block the user's action if tracking fails
     }
   };
 
-  const handlePassProfile = (profileId: string) => {
-    // Instead of removing, just advance to show next match
-    // Advance to the next available match in the slice
-    setDisplayIndex(prev => {
-      // Allow advancing even if it means showing fewer than 3 matches
-      // This lets users see all matches including the last ones
-      const nextIndex = prev + 1;
-      // Only prevent if we'd go completely beyond the array
-      return nextIndex <= currentMatches.length ? nextIndex : prev;
-    });
-    setExpandedMatchId(null); // Close any expanded cards
+  const formatMessageContent = (content: string) => {
+    return content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br/>');
   };
 
-  // Resize handlers
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isResizing) {
-        e.preventDefault(); // Prevent text selection
-        const newWidth = window.innerWidth - e.clientX;
-        // Constrain between 300px and 600px
-        if (newWidth >= 300 && newWidth <= 600) {
-          setMatchesWidth(newWidth);
-        }
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    if (isResizing) {
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isResizing]);
+  const startNewChat = () => {
+    setMessages([{
+      id: '1',
+      role: 'assistant',
+      content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
+      timestamp: new Date()
+    }]);
+    setCurrentMatches([]);
+    setDisplayIndex(0);
+    setSavedProfiles(new Set());
+    setConversationComplete(false);
+    setChatSessionId(null);
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
+  };
+
+  const getCommitmentIcon = (level?: 'low' | 'medium' | 'high') => {
+    if (level === 'high') return <Flame className="w-4 h-4 text-red-600" />;
+    if (level === 'medium') return <Handshake className="w-4 h-4 text-red-600" />;
+    if (level === 'low') return <Coffee className="w-4 h-4 text-red-600" />;
+    return null;
   };
 
   // Don't render until authenticated
@@ -1000,12 +593,13 @@ Please find matches who can help with this specific context.`;
                   </div>
                 </div>
               )}
+              
               <div ref={messagesEndRef} />
             </div>
           </div>
 
-          {/* User's Declared Interests */}
-          {userProfile && userProfile.looking_for && userProfile.looking_for.length > 0 && (
+          {/* User Profile Context Display */}
+          {userProfile && userProfile.looking_for && userProfile.looking_for.length > 0 && messages.length === 1 && (
             <div className="border-t border-stone-200 px-8 py-4 bg-stone-50/60">
               <div className="max-w-2xl mx-auto">
                 <div className="flex items-start gap-3">
@@ -1043,7 +637,7 @@ Please find matches who can help with this specific context.`;
           )}
 
           {/* Empty Profile State */}
-          {userProfile && (!userProfile.looking_for || userProfile.looking_for.length === 0) && conversationState === 'initial' && (
+          {userProfile && (!userProfile.looking_for || userProfile.looking_for.length === 0) && messages.length === 1 && (
             <div className="border-t border-stone-200 px-8 py-4 bg-yellow-50/60">
               <div className="max-w-2xl mx-auto">
                 <p className="text-sm text-yellow-800">
@@ -1057,24 +651,6 @@ Please find matches who can help with this specific context.`;
             </div>
           )}
 
-          {/* Progress Indicator for Context Gathering */}
-          {conversationState === 'gathering_context' && searchContext.selectedInterest && (
-            <div className="border-t border-stone-200 px-8 py-3 bg-blue-50/60">
-              <div className="max-w-2xl mx-auto">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-blue-900">
-                      Finding: {formatLookingForLabel(searchContext.selectedInterest.type)}
-                    </span>
-                  </div>
-                  <div className="text-blue-600 text-xs font-medium">
-                    Question {searchContext.currentQuestion + 1} of {contextQuestions[searchContext.selectedInterest.type]?.length || 1}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Input */}
           <div className="border-t border-stone-200 px-8 py-5 bg-white/60">
             <div className="max-w-2xl mx-auto">
@@ -1082,7 +658,7 @@ Please find matches who can help with this specific context.`;
                 <input
                   className="w-full bg-white border border-stone-200 rounded-xl pl-4 pr-12 py-3.5 text-sm placeholder-stone-400 text-stone-800 focus:outline-none focus:border-teal-600 focus:ring-0 transition-colors"
                   style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }}
-                  placeholder={conversationState === 'gathering_context' ? 'Tell me more...' : "Ask what you're looking for..."}
+                  placeholder="Ask what you're looking for..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -1094,13 +670,7 @@ Please find matches who can help with this specific context.`;
                       ? 'text-teal-600 hover:bg-teal-50' 
                       : 'text-stone-300'
                   }`}
-                  onClick={() => {
-                    if (conversationState === 'gathering_context') {
-                      handleContextResponse(input);
-                    } else {
-                      sendMessage();
-                    }
-                  }}
+                  onClick={() => sendMessage()}
                   disabled={isLoading || !input.trim()}
                 >
                   <Send className="w-4 h-4" />
@@ -1111,140 +681,186 @@ Please find matches who can help with this specific context.`;
         </div>
 
         {/* Matches Panel */}
-        <div className="flex flex-col border-l border-stone-200/50 bg-white relative min-h-0" style={{ width: `${matchesWidth}px` }}>
-          {/* Resize handle */}
-          <div 
-            className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-teal-600 z-20 transition-colors select-none"
+        <div 
+          className="bg-white border-l border-stone-200/50 overflow-hidden flex flex-col relative" 
+          style={{ width: `${matchesWidth}px`, minWidth: '300px', maxWidth: '800px' }}
+        >
+          <div
+            className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-teal-500 transition-colors z-10"
             onMouseDown={handleMouseDown}
-            style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
-          >
-            <div className="absolute left-1/2 top-[40%] -translate-x-1/2 z-30 pointer-events-none select-none">
-              <div className="flex items-center select-none">
-                <ChevronRight className="w-10 h-10 text-teal-600 cursor-col-resize pointer-events-none" />
-              </div>
-            </div>
-          </div>
-          <div className="px-6 py-5 border-b border-stone-200 bg-white/80">
-            <h3 className="text-base font-semibold text-stone-900" style={{ fontFamily: 'var(--font-ibm-plex)', fontWeight: 600 }}>Matches</h3>
-          </div>
+          />
+          
           <div 
-            className="flex-1 overflow-y-auto px-6 py-6"
+            className="flex-1 overflow-y-auto px-6 py-8"
             style={{
               backgroundImage: 'linear-gradient(rgba(13, 148, 136, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(13, 148, 136, 0.06) 1px, transparent 1px)',
               backgroundSize: '32px 32px'
             }}
           >
-            {currentMatches.length === 0 ? null : (
-              displayIndex >= currentMatches.length ? (
-                <div className="flex items-center justify-center h-full -mt-12">
-                  <div className="text-center space-y-4">
-                    <p className="text-sm font-medium text-stone-500">No more matches</p>
-                    <p className="text-xs text-stone-400">Try refining your search to see more results</p>
-                  </div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-stone-900" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>
+                Matches
+              </h2>
+              {currentMatches.length > 0 && (
+                <button
+                  onClick={startNewChat}
+                  className="text-xs text-stone-600 hover:text-stone-900 px-3 py-1.5 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors"
+                >
+                  New Search
+                </button>
+              )}
+            </div>
+
+            {currentMatches.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-8 h-8 text-stone-400" />
                 </div>
-              ) : (
-                currentMatches.slice(displayIndex, displayIndex + 3).map((match, localIndex) => {
-                const isExpanded = expandedMatchId === match.profile.id;
-                return (
-                  <div key={match.profile.id} className="mb-4 p-4 bg-white rounded-xl border border-stone-200 relative hover:border-stone-300 transition-all cursor-pointer" style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }} onClick={() => setExpandedMatchId(isExpanded ? null : match.profile.id)}>
-                    {/* Dismiss button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const actualIndex = displayIndex + localIndex;
-                        handlePassProfile(currentMatches[actualIndex].profile.id);
-                      }}
-                      className="absolute top-3 right-3 text-stone-400 hover:text-stone-600 transition-colors z-20 p-1 hover:bg-stone-100 rounded"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                    
-                    {/* Content */}
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
-                        {match.profile.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0 pr-6">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-stone-900 text-sm">{match.profile.name}</h3>
-                          {match.commitmentLevel && (
-                            <span title={`${match.commitmentLevel} commitment`}>
-                              {match.commitmentLevel === 'low' && <Coffee className="w-4 h-4 text-red-600" />}
-                              {match.commitmentLevel === 'medium' && <Handshake className="w-4 h-4 text-red-600" />}
-                              {match.commitmentLevel === 'high' && <Flame className="w-4 h-4 text-red-600" />}
-                            </span>
+                <p className="text-stone-600 text-sm mb-1">No matches yet</p>
+                <p className="text-stone-400 text-xs">Start a search to find collaborators</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {currentMatches.slice(displayIndex, displayIndex + 3).map((matchCard) => (
+                  <div
+                    key={matchCard.profile.id}
+                    className="border border-stone-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-white"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center flex-shrink-0 text-white font-semibold text-sm">
+                          {matchCard.profile.name?.charAt(0) || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-stone-900 text-sm truncate">
+                              {matchCard.profile.name}
+                            </h3>
+                            {getCommitmentIcon(matchCard.commitmentLevel)}
+                          </div>
+                          <p className="text-xs text-stone-500 mb-2">{matchCard.profile.ms_program}</p>
+                          
+                          {expandedMatchId === matchCard.profile.id ? (
+                            <div className="space-y-3 text-xs">
+                              <div>
+                                <p className="font-medium text-stone-700 mb-1">Why relevant:</p>
+                                <p className="text-stone-600 leading-relaxed">{matchCard.reasoning}</p>
+                              </div>
+                              
+                              {matchCard.profile.background && (
+                                <div>
+                                  <p className="font-medium text-stone-700 mb-1">Background:</p>
+                                  <p className="text-stone-600 leading-relaxed">{matchCard.profile.background}</p>
+                                </div>
+                              )}
+                              
+                              {matchCard.profile.working_on && (
+                                <div>
+                                  <p className="font-medium text-stone-700 mb-1">Currently working on:</p>
+                                  <p className="text-stone-600 leading-relaxed">{matchCard.profile.working_on}</p>
+                                </div>
+                              )}
+                              
+                              {matchCard.profile.expertise && (
+                                <div>
+                                  <p className="font-medium text-stone-700 mb-1">Expertise:</p>
+                                  <p className="text-stone-600 leading-relaxed">{matchCard.profile.expertise}</p>
+                                </div>
+                              )}
+                              
+                              <div className="flex gap-2 pt-2">
+                                <a
+                                  href={`mailto:${matchCard.profile.email}`}
+                                  onClick={() => handleEmailClick(matchCard.profile.id)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-xs font-medium"
+                                >
+                                  <Mail className="w-3 h-3" />
+                                  Email
+                                </a>
+                                {matchCard.profile.linkedin_url && (
+                                  <a
+                                    href={matchCard.profile.linkedin_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => handleLinkedInClick(matchCard.profile.id)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-xs font-medium"
+                                  >
+                                    <Linkedin className="w-3 h-3" />
+                                    LinkedIn
+                                  </a>
+                                )}
+                              </div>
+
+                              <button
+                                onClick={() => setExpandedMatchId(null)}
+                                className="text-teal-600 hover:text-teal-700 text-xs font-medium flex items-center gap-1"
+                              >
+                                Show less
+                                <ChevronRight className="w-3 h-3 rotate-90" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-xs text-stone-600 mb-2 line-clamp-2 leading-relaxed">
+                                {matchCard.reasoning}
+                              </p>
+                              <button
+                                onClick={() => setExpandedMatchId(matchCard.profile.id)}
+                                className="text-teal-600 hover:text-teal-700 text-xs font-medium flex items-center gap-1"
+                              >
+                                Show more
+                                <ChevronRight className="w-3 h-3 -rotate-90" />
+                              </button>
+                            </div>
                           )}
                         </div>
-                        <p className="text-xs text-stone-500 mb-2.5">{match.profile.ms_program}</p>
-                        {isExpanded ? (
-                          <p className="text-sm text-stone-700 leading-relaxed" style={{ lineHeight: '1.6' }}>
-                            {match.reasoning}
-                          </p>
-                        ) : (
-                          <p className="text-sm text-stone-700 leading-relaxed line-clamp-2" style={{ lineHeight: '1.6' }}>
-                            {match.reasoning}
-                          </p>
-                        )}
                       </div>
+                      
+                      <button
+                        onClick={() => handleSaveProfile(matchCard.profile, matchCard.reasoning)}
+                        disabled={savedProfiles.has(matchCard.profile.id)}
+                        className={`flex-shrink-0 p-2 rounded-lg transition-all ${
+                          savedProfiles.has(matchCard.profile.id)
+                            ? 'bg-red-50 text-red-600'
+                            : 'hover:bg-stone-100 text-stone-400 hover:text-red-600'
+                        }`}
+                      >
+                        <Heart 
+                          className={`w-4 h-4 ${savedProfiles.has(matchCard.profile.id) ? 'fill-current' : ''}`}
+                        />
+                      </button>
                     </div>
-
-                    {/* Action buttons - shown when expanded */}
-                    {isExpanded && (
-                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
-                        {match.profile.email && (
-                          <a 
-                            href={`mailto:${match.profile.email}`} 
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-600 hover:text-teal-600 hover:bg-teal-50 transition-colors rounded-lg border border-stone-200 hover:border-teal-200" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEmailClick(match.profile.id);
-                            }}
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                            <span className="font-medium">Email</span>
-                          </a>
-                        )}
-                        {match.profile.linkedin_url && (
-                          <a
-                            href={match.profile.linkedin_url.startsWith('http') ? match.profile.linkedin_url : `https://${match.profile.linkedin_url}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-600 hover:text-teal-600 hover:bg-teal-50 transition-colors rounded-lg border border-stone-200 hover:border-teal-200"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLinkedInClick(match.profile.id);
-                            }}
-                          >
-                            <Linkedin className="w-3.5 h-3.5" />
-                            <span className="font-medium">LinkedIn</span>
-                          </a>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSaveProfile(match.profile, match.reasoning);
-                          }}
-                          disabled={savedProfiles.has(match.profile.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                            savedProfiles.has(match.profile.id)
-                              ? 'text-green-600 bg-green-50 border-green-200'
-                              : 'text-stone-600 border-stone-200 hover:text-teal-600 hover:bg-teal-50 hover:border-teal-200'
-                          }`}
-                        >
-                          <Heart className={`w-3.5 h-3.5 ${savedProfiles.has(match.profile.id) ? 'fill-current' : ''}`} />
-                          <span className="font-medium">{savedProfiles.has(match.profile.id) ? 'Saved' : 'Save'}</span>
-                        </button>
-                      </div>
-                    )}
                   </div>
-                );
-              })
-              )
+                ))}
+
+                {currentMatches.length > 3 && (
+                  <div className="flex justify-between items-center pt-3 border-t border-stone-200">
+                    <button
+                      onClick={() => setDisplayIndex(Math.max(0, displayIndex - 3))}
+                      disabled={displayIndex === 0}
+                      className="text-sm text-teal-600 hover:text-teal-700 disabled:text-stone-300 disabled:cursor-not-allowed font-medium"
+                    >
+                      ← Previous
+                    </button>
+                    <span className="text-xs text-stone-500">
+                      {Math.floor(displayIndex / 3) + 1} of {Math.ceil(currentMatches.length / 3)}
+                    </span>
+                    <button
+                      onClick={() => setDisplayIndex(Math.min(currentMatches.length - 3, displayIndex + 3))}
+                      disabled={displayIndex + 3 >= currentMatches.length}
+                      className="text-sm text-teal-600 hover:text-teal-700 disabled:text-stone-300 disabled:cursor-not-allowed font-medium"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
-      </div>
+    </div>
     </>
   );
 }
+
