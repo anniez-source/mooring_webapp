@@ -352,14 +352,19 @@ export default function ChatPage() {
           });
           
           // Create match cards with reasoning from AI
-          const matchCards: MatchCard[] = enrichedPeople.map((profile, index) => ({
-            profile,
-            reasoning: matchedPeople[index].background, // Use AI's reasoning from parsed response
-            relevanceScore: 95 - (index * 5),
-            commitmentLevel: determineCommitmentLevel(profile)
-          }));
+          const matchCards: MatchCard[] = enrichedPeople.map((profile, index) => {
+            const commitmentLevel = determineCommitmentLevel(profile);
+            console.log(`Profile ${profile.name}: open_to =`, profile.open_to, 'commitment level =', commitmentLevel);
+            return {
+              profile,
+              reasoning: matchedPeople[index].background, // Use AI's reasoning from parsed response
+              relevanceScore: 95 - (index * 5),
+              commitmentLevel
+            };
+          });
 
           console.log('Match cards created:', matchCards.length);
+          console.log('Match cards with commitment:', matchCards.map(m => ({ name: m.profile.name, level: m.commitmentLevel })));
           setCurrentMatches(matchCards);
           
           // Update message with enriched profiles
