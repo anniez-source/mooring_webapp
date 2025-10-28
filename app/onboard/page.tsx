@@ -84,10 +84,10 @@ export default function OnboardPage() {
       newErrors.push('Please describe your expertise (minimum 150 characters)');
     }
     if (lookingFor.length === 0) {
-      newErrors.push('Please select at least one thing you\'re looking for');
+      newErrors.push('Please select at least one thing you&apos;re looking for');
     }
     if (openTo.length === 0) {
-      newErrors.push('Please select at least one thing you\'re open to');
+      newErrors.push('Please select at least one thing you&apos;re open to');
     }
     if (!consent) {
       newErrors.push('Please consent to being included in matching results');
@@ -423,11 +423,11 @@ export default function OnboardPage() {
 
             {/* Commitment Sections */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* I'm looking for */}
+              {/* I&apos;m looking for */}
               <div className="space-y-4">
                 <div>
                   <h2 className="text-lg font-semibold text-stone-800 mb-1" style={{ fontFamily: 'var(--font-ibm-plex)' }}>
-                    I'm looking for
+                    I&apos;m looking for
                   </h2>
                   <p className={`text-xs ${showValidation && lookingFor.length === 0 ? 'text-red-600 font-medium' : 'text-stone-500'}`}>
                     Select at least one across any commitment level
@@ -479,11 +479,11 @@ export default function OnboardPage() {
                 )}
               </div>
 
-              {/* I'm open to */}
+              {/* I&apos;m open to */}
               <div className="space-y-4">
                 <div>
                   <h2 className="text-lg font-semibold text-stone-800 mb-1" style={{ fontFamily: 'var(--font-ibm-plex)' }}>
-                    I'm open to
+                    I&apos;m open to
                   </h2>
                   <p className={`text-xs ${showValidation && openTo.length === 0 ? 'text-red-600 font-medium' : 'text-stone-500'}`}>
                     Select at least one across any commitment level
