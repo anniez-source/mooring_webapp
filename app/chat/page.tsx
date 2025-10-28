@@ -752,9 +752,9 @@ export default function ChatPage() {
                           <h3 className="font-semibold text-stone-900 text-sm">{match.profile.name}</h3>
                           {match.commitmentLevel && (
                             <span title={`${match.commitmentLevel} commitment`}>
-                              {match.commitmentLevel === 'low' && <Coffee className="w-4 h-4" />}
-                              {match.commitmentLevel === 'medium' && <Handshake className="w-4 h-4" />}
-                              {match.commitmentLevel === 'high' && <Flame className="w-4 h-4" />}
+                              {match.commitmentLevel === 'low' && <Coffee className="w-4 h-4 text-red-600" />}
+                              {match.commitmentLevel === 'medium' && <Handshake className="w-4 h-4 text-red-600" />}
+                              {match.commitmentLevel === 'high' && <Flame className="w-4 h-4 text-red-600" />}
                             </span>
                           )}
                         </div>

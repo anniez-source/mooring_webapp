@@ -387,7 +387,7 @@ export default function ProfilePage() {
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Icon className="w-5 h-5" />
+          <Icon className="w-5 h-5 text-red-600" />
           <div className="text-left">
             <div className="font-semibold text-stone-900 text-sm">{title}</div>
             <div className="text-xs text-stone-500">{subtitle}</div>
@@ -659,7 +659,7 @@ export default function ProfilePage() {
                             <div className="flex items-center gap-2 mb-2">
                               {(() => {
                                 const Icon = getCommitmentIcon(commitment);
-                                return <Icon className="w-4 h-4" />;
+                                return <Icon className="w-4 h-4 text-red-600" />;
                               })()}
                               <span className="text-xs font-semibold text-stone-600">{getCommitmentLabel(commitment)}</span>
                             </div>
@@ -734,7 +734,7 @@ export default function ProfilePage() {
                             <div className="flex items-center gap-2 mb-2">
                               {(() => {
                                 const Icon = getCommitmentIcon(commitment);
-                                return <Icon className="w-4 h-4" />;
+                                return <Icon className="w-4 h-4 text-red-600" />;
                               })()}
                               <span className="text-xs font-semibold text-stone-600">{getCommitmentLabel(commitment)}</span>
                             </div>
