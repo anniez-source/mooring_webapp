@@ -162,33 +162,44 @@ export default function ChatPage() {
     const lowerQuery = userQuery.toLowerCase();
     const lowerResponse = aiResponse.toLowerCase();
     
+    console.log('=== DETERMINING COMMITMENT LEVEL ===');
+    console.log('User query:', userQuery);
+    console.log('AI response (first 200 chars):', aiResponse.substring(0, 200));
+    
     // First check the AI's explicit categorization (most reliable)
     if (lowerResponse.includes('high commitment') || lowerResponse.includes('high-commitment')) {
+      console.log('Found HIGH commitment in AI response');
       return 'high';
     }
     if (lowerResponse.includes('medium commitment') || lowerResponse.includes('medium-commitment')) {
+      console.log('Found MEDIUM commitment in AI response');
       return 'medium';
     }
     if (lowerResponse.includes('low commitment') || lowerResponse.includes('low-commitment')) {
+      console.log('Found LOW commitment in AI response');
       return 'low';
     }
     
     // Then check user's query for commitment keywords
     // High commitment indicators
-    if (lowerQuery.match(/\b(cofounder|co-founder|technical cofounder|business cofounder|team member|long-term partner|join.{0,20}team)\b/)) {
+    if (lowerQuery.match(/\b(cofounder|co-?founder|technical|business|team member|long-?term partner|join.{0,20}team|partner)\b/)) {
+      console.log('Matched HIGH commitment keywords in query');
       return 'high';
     }
     
     // Medium commitment indicators
-    if (lowerQuery.match(/\b(advisor|mentor|advising|ongoing|project collaborat|regular help|service provider|beta test)\b/)) {
+    if (lowerQuery.match(/\b(advisor|mentor|advising|mentoring|ongoing|project collaborat|regular help|service provider|beta test)\b/)) {
+      console.log('Matched MEDIUM commitment keywords in query');
       return 'medium';
     }
     
     // Low commitment indicators
-    if (lowerQuery.match(/\b(introduction|connect me|coffee|quick consultation|30 min|one-time|advice|networking)\b/)) {
+    if (lowerQuery.match(/\b(introduction|intro|connect me|coffee|quick consultation|30 min|one-?time|advice|networking)\b/)) {
+      console.log('Matched LOW commitment keywords in query');
       return 'low';
     }
     
+    console.log('Could not determine commitment level - returning undefined');
     return undefined;
   };
 
