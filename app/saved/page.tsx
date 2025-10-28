@@ -182,6 +182,45 @@ export default function SavedContactsPage() {
     }
   };
 
+  const formatCommitmentItem = (item: { type: string; commitment: string }) => {
+    const labels: { [key: string]: string } = {
+      // Looking For - High Commitment
+      'technical_cofounder': 'Technical cofounder',
+      'business_cofounder': 'Business cofounder',
+      'team_member': 'Team member',
+      'long_term_project_collaborator': 'Long-term project collaborator',
+      // Looking For - Medium Commitment
+      'advisor': 'Advisor',
+      'service_provider': 'Service provider (ongoing)',
+      'project_collaboration': 'Project collaborator (specific project)',
+      'beta_tester': 'Beta tester',
+      // Looking For - Low Commitment
+      'introduction': 'Introduction to someone specific',
+      'quick_consultation': 'Quick consultation (30 min)',
+      'coffee_chats': 'Coffee chats / networking',
+      // Open To - High Commitment
+      'being_technical_cofounder': 'Being a technical cofounder',
+      'being_business_cofounder': 'Being a business cofounder',
+      'joining_team': 'Joining a team',
+      'long_term_collaboration': 'Long-term project collaboration',
+      // Open To - Medium Commitment
+      'advising': 'Advising / mentoring',
+      'mentoring': 'Advising / mentoring',
+      'project_collaboration_open': 'Collaborating on projects',
+      'collaborating_projects': 'Collaborating on projects',
+      'providing_services': 'Providing services',
+      'being_beta_tester': 'Being a beta tester',
+      // Open To - Low Commitment
+      'making_introductions': 'Making introductions',
+      'offering_consultation': 'Offering quick consultations (30 min)',
+      'coffee_chats': 'Coffee chats / networking',
+      // Other
+      'other': 'Other'
+    };
+    
+    return labels[item.type] || item.type;
+  };
+
   const handleLinkedInClick = async (profileId: string) => {
     try {
       await fetch('/api/track-click', {
@@ -439,10 +478,10 @@ export default function SavedContactsPage() {
                           <div>
                             <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Looking For</h4>
                             <div className="space-y-1.5">
-                              {contact.looking_for.map((item: string, idx: number) => (
+                              {contact.looking_for.map((item: any, idx: number) => (
                                 <div key={idx} className="flex items-center gap-2 text-sm text-stone-700">
                                   <span className="w-1 h-1 rounded-full bg-teal-600"></span>
-                                  {item}
+                                  {formatCommitmentItem(item)}
                                 </div>
                               ))}
                             </div>
@@ -454,10 +493,10 @@ export default function SavedContactsPage() {
                           <div>
                             <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Open To</h4>
                             <div className="space-y-1.5">
-                              {contact.open_to.map((item: string, idx: number) => (
+                              {contact.open_to.map((item: any, idx: number) => (
                                 <div key={idx} className="flex items-center gap-2 text-sm text-stone-700">
                                   <span className="w-1 h-1 rounded-full bg-teal-600"></span>
-                                  {item}
+                                  {formatCommitmentItem(item)}
                                 </div>
                               ))}
                             </div>
