@@ -319,7 +319,7 @@ export default function ProfilePage() {
       // Low commitment - looking for
       'introduction': 'Introductions',
       'coffee_chats': 'Coffee chats / networking',
-      'feedback': 'Feedback on idea/product',
+      'feedback': 'Feedback on idea / product',
       'quick_consultation': 'Quick consultation (30 min)', // legacy
       // High commitment - open to
       'being_technical_cofounder': 'Being a technical cofounder',
@@ -337,7 +337,7 @@ export default function ProfilePage() {
       // Low commitment - open to
       'making_introductions': 'Making introductions',
       'coffee_chats': 'Coffee chats / networking',
-      'giving_feedback': 'Giving feedback on ideas/products',
+      'giving_feedback': 'Giving feedback on ideas / products',
       'offering_consultation': 'Offering quick consultations (30 min)', // legacy
       'other': 'Other'
     };
@@ -456,7 +456,7 @@ export default function ProfilePage() {
   const lookingForLowOptions = [
     { type: 'introduction', label: 'Introductions' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'feedback', label: 'Feedback on idea/product' },
+    { type: 'feedback', label: 'Feedback on idea / product' },
     { type: 'other', label: 'Other' }
   ];
 
@@ -478,7 +478,7 @@ export default function ProfilePage() {
   const openToLowOptions = [
     { type: 'making_introductions', label: 'Making introductions' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'giving_feedback', label: 'Giving feedback on ideas/products' },
+    { type: 'giving_feedback', label: 'Giving feedback on ideas / products' },
     { type: 'other', label: 'Other' }
   ];
 

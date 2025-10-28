@@ -402,7 +402,7 @@ export default function OnboardingModal() {
   const lookingForLowOptions = [
     { type: 'introduction', label: 'Introductions' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'feedback', label: 'Feedback on idea/product' },
+    { type: 'feedback', label: 'Feedback on idea / product' },
     { type: 'other', label: 'Other' }
   ];
 
@@ -424,7 +424,7 @@ export default function OnboardingModal() {
   const openToLowOptions = [
     { type: 'making_introductions', label: 'Making introductions' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'giving_feedback', label: 'Giving feedback on ideas/products' },
+    { type: 'giving_feedback', label: 'Giving feedback on ideas / products' },
     { type: 'other', label: 'Other' }
   ];
 
