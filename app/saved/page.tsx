@@ -282,7 +282,7 @@ export default function SavedContactsPage() {
                     /* Collapsed View */
                     <div className="flex items-start gap-4 pr-8">
                       {/* Profile Icon */}
-                      <div className="w-10 h-10 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
                         {contact.photo_url ? (
                           <img 
                             src={contact.photo_url} 
@@ -357,7 +357,7 @@ export default function SavedContactsPage() {
                     <div className="space-y-6">
                       {/* Header with profile image */}
                       <div className="flex items-start gap-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
                           {contact.photo_url ? (
                             <img 
                               src={contact.photo_url} 

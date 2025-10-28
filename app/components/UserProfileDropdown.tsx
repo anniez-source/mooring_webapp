@@ -62,7 +62,7 @@ export default function UserProfileDropdown() {
             className="w-8 h-8 rounded-full object-cover border-2 border-stone-200"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
             <span className="text-white text-sm font-medium">{getInitial()}</span>
           </div>
         )}
