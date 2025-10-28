@@ -469,7 +469,6 @@ export default function ProfilePage() {
 
   const openToMediumOptions = [
     { type: 'mentoring', label: 'Advising / mentoring' },
-    { type: 'project_collaboration', label: 'Collaborating on projects' },
     { type: 'providing_services', label: 'Providing services (ongoing)' },
     { type: 'being_beta_tester', label: 'Being a beta tester / design partner' },
     { type: 'other', label: 'Other' }
