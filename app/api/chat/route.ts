@@ -89,6 +89,8 @@ RESPONSE FORMAT:
 
 ONLY return people who have explicitly indicated availability for what's requested. If fewer than 5 people meet the strict availability criteria, return however many qualify (could be 0-5). Quality over quantity - do not pad results with people who haven't indicated availability.
 
+If you include an introductory sentence, end it with a period, not a colon. Example: "Here are the strongest matches." NOT "Here are the strongest matches:"
+
 For EACH person, format like this:
 
 **[Name]** - [Program]
