@@ -183,13 +183,8 @@ export default function ChatPage() {
           .eq('clerk_user_id', user.id)
           .maybeSingle();
 
-        if (userError) {
+        if (userError || !userData) {
           console.error('[Chat] Error fetching user:', userError);
-          return;
-        }
-
-        if (!userData) {
-          console.warn('[Chat] No user data found for clerk_user_id:', user.id);
           return;
         }
 
@@ -201,11 +196,6 @@ export default function ChatPage() {
 
         if (profileError) {
           console.error('[Chat] Error fetching profile:', profileError);
-          return;
-        }
-
-        if (!profileData) {
-          console.warn('[Chat] No profile data found for user_id:', userData.user_id);
           return;
         }
 
@@ -429,7 +419,9 @@ export default function ChatPage() {
       // No context questions, search immediately
       const query = `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}`;
       setInput(query);
-      // Don't auto-send, let user click send button
+      if (sendMessageRef.current) {
+        await sendMessageRef.current(query);
+      }
       return;
     }
     
@@ -516,9 +508,12 @@ export default function ChatPage() {
       
       // Build rich query from context
       const richQuery = buildRichQuery(selectedInterest, updatedContext);
-      setInput(richQuery);
+      setInput('');
       
-      // Don't auto-send, let user click send button
+      // Execute search
+      if (sendMessageRef.current) {
+        await sendMessageRef.current(richQuery);
+      }
       
       // Reset conversation state
       setConversationState('results');
@@ -779,6 +774,9 @@ Please find matches who can help with this specific context.`;
       setIsLoading(false);
     }
   };
+
+  // Assign sendMessage to ref so it can be called from other functions
+  sendMessageRef.current = sendMessage;
 
   const handleQuickSearch = (item: { commitment: string; type: string }) => {
     // Use the new multi-step flow instead of immediate search

@@ -484,15 +484,14 @@ export default function ProfilePage() {
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
-    { type: 'service_provider', label: 'Receiving paid services' },
-    { type: 'beta_tester', label: 'Beta tester' },
     { type: 'other', label: 'Other' }
   ];
 
   const lookingForLowOptions = [
-    { type: 'introduction', label: 'Introductions' },
-    { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'feedback', label: 'Feedback on idea / product' },
+    { type: 'quick_consultation', label: 'Quick consultation' },
+    { type: 'coffee_chat', label: 'Coffee chat' },
+    { type: 'feedback', label: 'Feedback' },
+    { type: 'beta_tester', label: 'Beta tester' },
     { type: 'other', label: 'Other' }
   ];
 
@@ -500,21 +499,20 @@ export default function ProfilePage() {
     { type: 'being_technical_cofounder', label: 'Being a technical cofounder' },
     { type: 'being_business_cofounder', label: 'Being a business cofounder' },
     { type: 'being_domain_expert_cofounder', label: 'Being a domain expert cofounder' },
-    { type: 'joining_founding_team', label: 'Joining as founding team member' },
+    { type: 'joining_founding_team', label: 'Joining a founding team' },
     { type: 'other', label: 'Other' }
   ];
 
   const openToMediumOptions = [
-    { type: 'mentoring', label: 'Advising / mentoring' },
-    { type: 'providing_services', label: 'Providing paid services' },
-    { type: 'being_beta_tester', label: 'Being a beta tester' },
+    { type: 'mentoring', label: 'Advising or mentoring' },
     { type: 'other', label: 'Other' }
   ];
 
   const openToLowOptions = [
-    { type: 'making_introductions', label: 'Making introductions' },
-    { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'giving_feedback', label: 'Giving feedback on ideas / products' },
+    { type: 'giving_consultations', label: 'Giving quick consultations' },
+    { type: 'coffee_chats', label: 'Coffee chats' },
+    { type: 'giving_feedback', label: 'Giving feedback' },
+    { type: 'beta_testing', label: 'Beta testing' },
     { type: 'other', label: 'Other' }
   ];
 
