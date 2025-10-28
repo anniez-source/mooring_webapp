@@ -413,154 +413,154 @@ export default function ChatPage() {
     return { text, people };
   };
 
-    const handleInterestSelect = async (interest: { commitment: string; type: string }) => {
-      const questions = contextQuestions[interest.type] || [];
-      
-      if (questions.length === 0) {
-        // No context questions, search immediately
-        const query = `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}`;
-        setInput(query);
-        if (sendMessageRef.current) {
-          await sendMessageRef.current(query);
-        }
-        return;
+  const handleInterestSelect = async (interest: { commitment: string; type: string }) => {
+    const questions = contextQuestions[interest.type] || [];
+    
+    if (questions.length === 0) {
+      // No context questions, search immediately
+      const query = `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}`;
+      setInput(query);
+      if (sendMessageRef.current) {
+        await sendMessageRef.current(query);
       }
-      
-      // Start context gathering flow
+      return;
+    }
+    
+    // Start context gathering flow
+    setSearchContext({
+      selectedInterest: interest,
+      collectedContext: {},
+      currentQuestion: 0
+    });
+    setConversationState('gathering_context');
+    
+    // Add system message with first question
+    const firstQuestion = questions[0];
+    const systemMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: `Great! You're looking for ${formatLookingForLabel(interest.type).toLowerCase()}.\n\n${userProfile?.working_on ? `You're currently working on: "${userProfile.working_on}"\n\n` : ''}To find the best match:\n\n${firstQuestion}`,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, systemMessage]);
+    setInput('');
+  };
+
+  const handleContextResponse = async (response: string) => {
+    if (!response.trim()) return;
+    
+    const { selectedInterest, currentQuestion, collectedContext } = searchContext;
+    if (!selectedInterest) return;
+    
+    // Add user's response to messages
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: response,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Store the response
+    const questionKeys = getQuestionKeys(selectedInterest.type);
+    const questionKey = questionKeys[currentQuestion] || `question_${currentQuestion}`;
+    const updatedContext = {
+      ...collectedContext,
+      [questionKey]: response
+    };
+    
+    const questions = contextQuestions[selectedInterest.type] || [];
+    
+    // Check if more questions
+    if (currentQuestion + 1 < questions.length) {
+      // Ask next question
       setSearchContext({
-        selectedInterest: interest,
-        collectedContext: {},
-        currentQuestion: 0
+        ...searchContext,
+        collectedContext: updatedContext,
+        currentQuestion: currentQuestion + 1
       });
-      setConversationState('gathering_context');
       
-      // Add system message with first question
-      const firstQuestion = questions[0];
+      const nextQuestion = questions[currentQuestion + 1];
       const systemMessage: Message = {
-        id: Date.now().toString(),
+        id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Great! You're looking for ${formatLookingForLabel(interest.type).toLowerCase()}.\n\n${userProfile?.working_on ? `You're currently working on: "${userProfile.working_on}"\n\n` : ''}To find the best match:\n\n${firstQuestion}`,
+        content: nextQuestion,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, systemMessage]);
       setInput('');
-    };
-
-    const handleContextResponse = async (response: string) => {
-      if (!response.trim()) return;
+    } else {
+      // Done gathering context, execute search
+      setSearchContext({
+        ...searchContext,
+        collectedContext: updatedContext
+      });
+      setConversationState('searching');
       
-      const { selectedInterest, currentQuestion, collectedContext } = searchContext;
-      if (!selectedInterest) return;
-      
-      // Add user's response to messages
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: response,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, userMessage]);
-      
-      // Store the response
-      const questionKeys = getQuestionKeys(selectedInterest.type);
-      const questionKey = questionKeys[currentQuestion] || `question_${currentQuestion}`;
-      const updatedContext = {
-        ...collectedContext,
-        [questionKey]: response
-      };
-      
-      const questions = contextQuestions[selectedInterest.type] || [];
-      
-      // Check if more questions
-      if (currentQuestion + 1 < questions.length) {
-        // Ask next question
-        setSearchContext({
-          ...searchContext,
-          collectedContext: updatedContext,
-          currentQuestion: currentQuestion + 1
-        });
-        
-        const nextQuestion = questions[currentQuestion + 1];
-        const systemMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: nextQuestion,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, systemMessage]);
-        setInput('');
-      } else {
-        // Done gathering context, execute search
-        setSearchContext({
-          ...searchContext,
-          collectedContext: updatedContext
-        });
-        setConversationState('searching');
-        
-        // Show what we're searching for
-        const contextSummary = Object.values(updatedContext).map(v => `• ${v}`).join('\n');
-        const searchMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: `Got it! Searching for ${formatLookingForLabel(selectedInterest.type).toLowerCase()} with:\n${contextSummary}`,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, searchMessage]);
-        
-        // Build rich query from context
-        const richQuery = buildRichQuery(selectedInterest, updatedContext);
-        setInput('');
-        
-        // Execute search
-        if (sendMessageRef.current) {
-          await sendMessageRef.current(richQuery);
-        }
-        
-        // Reset conversation state
-        setConversationState('results');
-        setSearchContext({
-          selectedInterest: null,
-          collectedContext: {},
-          currentQuestion: 0
-        });
-      }
-    };
-
-    const buildRichQuery = (
-      interest: { commitment: string; type: string },
-      context: Record<string, string>
-    ): string => {
-      const contextDetails = Object.entries(context)
-        .map(([key, value]) => `- ${value}`)
-        .join('\n');
-      
-      return `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}.
-
-${userProfile?.background ? `My background: ${userProfile.background}\n\n` : ''}${userProfile?.working_on ? `Current work: ${userProfile.working_on}\n\n` : ''}Specific requirements:
-${contextDetails}
-
-Please find matches who can help with this specific context.`;
-    };
-
-    const startNewChat = () => {
-      setMessages([{
-        id: '1',
+      // Show what we're searching for
+      const contextSummary = Object.values(updatedContext).map(v => `• ${v}`).join('\n');
+      const searchMessage: Message = {
+        id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
+        content: `Got it! Searching for ${formatLookingForLabel(selectedInterest.type).toLowerCase()} with:\n${contextSummary}`,
         timestamp: new Date()
-      }]);
-      setCurrentMatches([]);
-      setDisplayIndex(0);
-      setSavedProfiles(new Set());
-      setConversationComplete(false);
-      setChatSessionId(null); // Reset session ID for new conversation
-      setConversationState('initial');
+      };
+      setMessages(prev => [...prev, searchMessage]);
+      
+      // Build rich query from context
+      const richQuery = buildRichQuery(selectedInterest, updatedContext);
+      setInput('');
+      
+      // Execute search
+      if (sendMessageRef.current) {
+        await sendMessageRef.current(richQuery);
+      }
+      
+      // Reset conversation state
+      setConversationState('results');
       setSearchContext({
         selectedInterest: null,
         collectedContext: {},
         currentQuestion: 0
       });
-    };
+    }
+  };
+
+  const buildRichQuery = (
+    interest: { commitment: string; type: string },
+    context: Record<string, string>
+  ): string => {
+    const contextDetails = Object.entries(context)
+      .map(([key, value]) => `- ${value}`)
+      .join('\n');
+    
+    return `I'm looking for ${formatLookingForLabel(interest.type).toLowerCase()}.
+
+${userProfile?.background ? `My background: ${userProfile.background}\n\n` : ''}${userProfile?.working_on ? `Current work: ${userProfile.working_on}\n\n` : ''}Specific requirements:
+${contextDetails}
+
+Please find matches who can help with this specific context.`;
+  };
+
+  const startNewChat = () => {
+    setMessages([{
+      id: '1',
+      role: 'assistant',
+      content: "I match you with relevant collaborators based on what you're looking for. What kind of expertise or connection do you need?",
+      timestamp: new Date()
+    }]);
+    setCurrentMatches([]);
+    setDisplayIndex(0);
+    setSavedProfiles(new Set());
+    setConversationComplete(false);
+    setChatSessionId(null); // Reset session ID for new conversation
+    setConversationState('initial');
+    setSearchContext({
+      selectedInterest: null,
+      collectedContext: {},
+      currentQuestion: 0
+    });
+  };
 
   const sendMessage = async (messageOverride?: string) => {
     const messageText = messageOverride || input.trim();
