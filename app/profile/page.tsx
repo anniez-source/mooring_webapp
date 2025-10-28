@@ -314,7 +314,7 @@ export default function ProfilePage() {
       // Medium commitment - looking for
       'advisor': 'Advisor or mentor',
       'project_collaborator': 'Project collaborator',
-      'service_provider': 'Providing paid services',
+      'service_provider': 'Receiving paid services',
       'beta_tester': 'Beta tester',
       // Low commitment - looking for
       'introduction': 'Introductions',
@@ -448,7 +448,7 @@ export default function ProfilePage() {
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
-    { type: 'service_provider', label: 'Providing paid services' },
+    { type: 'service_provider', label: 'Receiving paid services' },
     { type: 'beta_tester', label: 'Beta tester' },
     { type: 'other', label: 'Other' }
   ];

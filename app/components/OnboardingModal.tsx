@@ -394,7 +394,7 @@ export default function OnboardingModal() {
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
-    { type: 'service_provider', label: 'Providing paid services' },
+    { type: 'service_provider', label: 'Receiving paid services' },
     { type: 'beta_tester', label: 'Beta tester' },
     { type: 'other', label: 'Other' }
   ];
