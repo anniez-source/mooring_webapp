@@ -714,12 +714,14 @@ export default function ChatPage() {
                       <div className="flex-1 min-w-0 pr-6">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold text-stone-900 text-sm">{match.profile.name}</h3>
-                          {match.commitmentLevel && (
+                          {match.commitmentLevel ? (
                             <span className="inline-flex items-center">
-                              {match.commitmentLevel === 'low' && <Coffee className="w-3.5 h-3.5 text-amber-600" />}
-                              {match.commitmentLevel === 'medium' && <Handshake className="w-3.5 h-3.5 text-blue-600" />}
-                              {match.commitmentLevel === 'high' && <Flame className="w-3.5 h-3.5 text-red-600" />}
+                              {match.commitmentLevel === 'low' && <Coffee className="w-3.5 h-3.5 text-amber-600" title="Low commitment" />}
+                              {match.commitmentLevel === 'medium' && <Handshake className="w-3.5 h-3.5 text-blue-600" title="Medium commitment" />}
+                              {match.commitmentLevel === 'high' && <Flame className="w-3.5 h-3.5 text-red-600" title="High commitment" />}
                             </span>
+                          ) : (
+                            <span className="text-[8px] text-stone-400">[no data]</span>
                           )}
                         </div>
                         <p className="text-xs text-stone-500 mb-2.5">{match.profile.ms_program}</p>
