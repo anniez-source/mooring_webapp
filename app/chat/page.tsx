@@ -201,11 +201,21 @@ export default function ChatPage() {
     // Format 2: Name\n📧 email\n💼 linkedin\n\nWhy relevant: ... (no bold, no program)
     // Format 3: **Name**\n📧 email\n💼 linkedin\n\nWhy relevant: ... (bold but no program)
     
-    const personRegex = /(?:\*\*)?([^\n*]+?)(?:\*\*)?(?: - ([^\n]+))?\n📧 ([^\n]+)\n💼 ([^\n]+)\n\nWhy relevant[.:] ([^]+?)(?=\n\n(?:\*\*)?[A-Z][a-z]+|Assessment:|$)/gs;
+    // Updated regex that's more flexible with ending conditions
+    const personRegex = /(?:\*\*)?([A-Z][^\n*]+?)(?:\*\*)?(?: - ([^\n]+))?\n📧\s*([^\n]+)\n💼\s*([^\n]+)\n\nWhy relevant[.:]?\s*([^]+?)(?=\n\n(?:Assessment|Suggested approach|$)|$)/gis;
     let match;
+
+    console.log('=== Parsing AI Response ===');
+    console.log('Full response to parse:', rawContent);
 
     while ((match = personRegex.exec(rawContent)) !== null) {
       const [fullMatch, name, ms_program, email, linkedin_url, reasoning] = match;
+      
+      console.log('Found person:', {
+        name: name.trim(),
+        email: email.trim(),
+        program: ms_program ? ms_program.trim() : 'Member'
+      });
 
       // Create a dummy profile for display
       const dummyProfile: Profile = {
@@ -226,6 +236,8 @@ export default function ChatPage() {
       // Remove the person block from the text content
       text = text.replace(fullMatch, '');
     }
+
+    console.log(`Total people parsed: ${people.length}`);
 
     // Remove intro lines like "I found X people..." and "---" separators
     text = text.replace(/^I found .+?:\s*/i, ''); // Remove intro line
