@@ -329,7 +329,6 @@ export default function ProfilePage() {
       // Low commitment - open to
       'making_introductions': 'Making introductions',
       'offering_consultation': 'Offering quick consultations (30 min)',
-      'coffee_chats': 'Coffee chats / networking',
       'other': 'Other'
     };
     
