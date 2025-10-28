@@ -363,7 +363,6 @@ export default function ProfilePage() {
       'being_beta_tester': 'Being a beta tester',
       // Low commitment - open to
       'making_introductions': 'Making introductions',
-      'coffee_chats': 'Coffee chats / networking',
       'giving_feedback': 'Giving feedback on ideas / products',
       'offering_consultation': 'Offering quick consultations (30 min)', // legacy
       'other': 'Other'
