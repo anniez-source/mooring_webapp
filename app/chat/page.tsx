@@ -160,8 +160,9 @@ export default function ChatPage() {
     const people: Profile[] = [];
     let text = rawContent;
 
-    // Regex to find person blocks
-    const personRegex = /\*\*([^*]+)\*\* - ([^\n]+)\n📧 ([^\n]+)\n💼 ([^\n]+)\n\nWhy relevant: ([^]+?)(?=\*\*|$)/g;
+    // Updated regex to handle "Why relevant." (period) instead of "Why relevant:" (colon)
+    // Also more flexible with whitespace and separators
+    const personRegex = /\*\*([^*]+)\*\* - ([^\n]+)\n📧 ([^\n]+)\n💼 ([^\n]+)\n\nWhy relevant[.:] ([^]+?)(?=---|\*\*|$)/g;
     let match;
     let lastIndex = 0;
 
@@ -188,6 +189,10 @@ export default function ChatPage() {
       text = text.replace(fullMatch, '');
     }
 
+    // Remove intro lines like "I found X people..." and "---" separators
+    text = text.replace(/^I found .+?:\s*/i, ''); // Remove intro line
+    text = text.replace(/---+/g, ''); // Remove all --- separators
+    
     // Clean up any extra newlines or spaces left from removing blocks
     text = text.replace(/\n\s*\n/g, '\n\n').trim();
 
