@@ -189,11 +189,13 @@ export default function ChatPage() {
     const people: Profile[] = [];
     let text = rawContent;
 
-    // Updated regex to handle "Why relevant." (period) instead of "Why relevant:" (colon)
-    // Also more flexible with whitespace and separators
-    const personRegex = /\*\*([^*]+)\*\* - ([^\n]+)\n📧 ([^\n]+)\n💼 ([^\n]+)\n\nWhy relevant[.:] ([^]+?)(?=---|\*\*|$)/g;
+    // More flexible regex to handle various AI response formats:
+    // Format 1: **Name** - Program\n📧 email\n💼 linkedin\n\nWhy relevant: ...
+    // Format 2: Name\n📧 email\n💼 linkedin\n\nWhy relevant: ... (no bold, no program)
+    // Format 3: **Name**\n📧 email\n💼 linkedin\n\nWhy relevant: ... (bold but no program)
+    
+    const personRegex = /(?:\*\*)?([^\n*]+?)(?:\*\*)?(?: - ([^\n]+))?\n📧 ([^\n]+)\n💼 ([^\n]+)\n\nWhy relevant[.:] ([^]+?)(?=\n\n(?:\*\*)?[A-Z][a-z]+|Assessment:|$)/gs;
     let match;
-    let lastIndex = 0;
 
     while ((match = personRegex.exec(rawContent)) !== null) {
       const [fullMatch, name, ms_program, email, linkedin_url, reasoning] = match;
@@ -202,7 +204,7 @@ export default function ChatPage() {
       const dummyProfile: Profile = {
         id: `temp-${name.replace(/\s/g, '-')}`,
         name: name.trim(),
-        ms_program: ms_program.trim(),
+        ms_program: ms_program ? ms_program.trim() : 'Member', // Default if no program provided
         email: email.trim(),
         linkedin_url: linkedin_url.trim() === 'No LinkedIn provided' ? '' : linkedin_url.trim(),
         background: reasoning.trim(),
@@ -223,7 +225,7 @@ export default function ChatPage() {
     text = text.replace(/---+/g, ''); // Remove all --- separators
     
     // Clean up any extra newlines or spaces left from removing blocks
-    text = text.replace(/\n\s*\n/g, '\n\n').trim();
+    text = text.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
 
     return { text, people };
   };
@@ -729,14 +731,12 @@ export default function ChatPage() {
                       <div className="flex-1 min-w-0 pr-6">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold text-stone-900 text-sm">{match.profile.name}</h3>
-                          {match.commitmentLevel ? (
-                            <span className="inline-flex items-center">
-                              {match.commitmentLevel === 'low' && <Coffee className="w-3.5 h-3.5 text-amber-600" title="Low commitment" />}
-                              {match.commitmentLevel === 'medium' && <Handshake className="w-3.5 h-3.5 text-blue-600" title="Medium commitment" />}
-                              {match.commitmentLevel === 'high' && <Flame className="w-3.5 h-3.5 text-red-600" title="High commitment" />}
+                          {match.commitmentLevel && (
+                            <span className="text-base" title={`${match.commitmentLevel} commitment`}>
+                              {match.commitmentLevel === 'low' && '☕️'}
+                              {match.commitmentLevel === 'medium' && '🤝'}
+                              {match.commitmentLevel === 'high' && '🔥'}
                             </span>
-                          ) : (
-                            <span className="text-[8px] text-stone-400">[no data]</span>
                           )}
                         </div>
                         <p className="text-xs text-stone-500 mb-2.5">{match.profile.ms_program}</p>
