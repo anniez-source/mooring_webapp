@@ -32,16 +32,17 @@ export default function ProfilePage() {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [background, setBackground] = useState('');
   const [expertise, setExpertise] = useState('');
+  const [notLookingFor, setNotLookingFor] = useState('');
   const [lookingFor, setLookingFor] = useState<CommitmentItem[]>([]);
   const [openTo, setOpenTo] = useState<CommitmentItem[]>([]);
   const [optedIn, setOptedIn] = useState(false);
 
   // Expandable sections state
   const [expandedLookingFor, setExpandedLookingFor] = useState<{[key: string]: boolean}>({
-    high: true, medium: true, low: true
+    high: false, medium: false, low: false
   });
   const [expandedOpenTo, setExpandedOpenTo] = useState<{[key: string]: boolean}>({
-    high: true, medium: true, low: true
+    high: false, medium: false, low: false
   });
 
   useEffect(() => {
@@ -77,10 +78,13 @@ export default function ProfilePage() {
         }
 
         if (profileData) {
-          setProfilePicture(profileData.profile_picture);
+          console.log('Loading profile picture:', profileData.profile_picture ? 'YES' : 'NO', profileData.profile_picture?.substring(0, 50));
+          setProfilePicture(profileData.profile_picture || null);
           setLinkedinUrl(profileData.linkedin_url || '');
-          setBackground(profileData.background || '');
-          setExpertise(profileData.expertise || '');
+          // Filter out "Profile incomplete" placeholders
+          setBackground(profileData.background === 'Profile incomplete' ? '' : (profileData.background || ''));
+          setExpertise(profileData.expertise === 'Profile incomplete' ? '' : (profileData.expertise || ''));
+          setNotLookingFor(profileData.not_looking_for || '');
           setLookingFor(profileData.looking_for || []);
           setOpenTo(profileData.open_to || []);
           setOptedIn(profileData.opted_in || false);
@@ -95,6 +99,17 @@ export default function ProfilePage() {
 
     fetchProfile();
   }, [user, isLoaded]);
+
+  const handleEditMode = () => {
+    // Clear "Profile incomplete" placeholders when entering edit mode
+    if (background === 'Profile incomplete') {
+      setBackground('');
+    }
+    if (expertise === 'Profile incomplete') {
+      setExpertise('');
+    }
+    setIsEditing(true);
+  };
 
   const toggleLookingFor = (commitment: 'high' | 'medium' | 'low', type: string) => {
     setLookingFor(prev => {
@@ -125,9 +140,19 @@ export default function ProfilePage() {
         setErrors(['Please upload a JPG or PNG image']);
         return;
       }
+      
+      // Check file size (limit to 500KB to avoid database issues)
+      const maxSize = 500 * 1024; // 500KB
+      if (file.size > maxSize) {
+        setErrors([`Image too large (${Math.round(file.size / 1024)}KB). Please use an image under 500KB.`]);
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfilePicture(reader.result as string);
+        const base64String = reader.result as string;
+        console.log('Image loaded, size:', Math.round(base64String.length / 1024), 'KB');
+        setProfilePicture(base64String);
       };
       reader.readAsDataURL(file);
     }
@@ -187,21 +212,24 @@ export default function ProfilePage() {
         looking_for: lookingFor,
         open_to: openTo,
         opted_in: optedIn,
+        linkedin_url: linkedinUrl || null,
+        profile_picture: profilePicture || null,
+        not_looking_for: notLookingFor || null,
         updated_at: new Date().toISOString()
       };
 
-      if (linkedinUrl) {
-        profileData.linkedin_url = linkedinUrl;
-      }
-      if (profilePicture) {
-        profileData.profile_picture = profilePicture;
-      }
+      console.log('Saving profile with picture:', profilePicture ? 'YES' : 'NO', profilePicture?.substring(0, 50));
 
       const { error } = await supabase
         .from('profiles')
         .upsert(profileData, { onConflict: 'user_id' });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Profile saved successfully');
 
       setIsEditing(false);
       setShowValidation(false);
@@ -213,11 +241,43 @@ export default function ProfilePage() {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     setIsEditing(false);
     setShowValidation(false);
     setErrors([]);
-    router.refresh();
+    
+    // Refetch profile data to restore original values
+    if (user) {
+      try {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('user_id')
+          .eq('clerk_user_id', user.id)
+          .single();
+
+        if (userData) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', userData.user_id)
+            .single();
+
+          if (profileData) {
+            console.log('Refetching profile picture:', profileData.profile_picture ? 'YES' : 'NO');
+            setProfilePicture(profileData.profile_picture || null);
+            setLinkedinUrl(profileData.linkedin_url || '');
+            setBackground(profileData.background === 'Profile incomplete' ? '' : (profileData.background || ''));
+            setExpertise(profileData.expertise === 'Profile incomplete' ? '' : (profileData.expertise || ''));
+            setNotLookingFor(profileData.not_looking_for || '');
+            setLookingFor(profileData.looking_for || []);
+            setOpenTo(profileData.open_to || []);
+            setOptedIn(profileData.opted_in || false);
+          }
+        }
+      } catch (error) {
+        console.error('Error refetching profile:', error);
+      }
+    }
   };
 
   if (!isLoaded || isLoading) {
@@ -253,13 +313,9 @@ export default function ProfilePage() {
       'service_provider': 'Service provider (ongoing)',
       'beta_tester': 'Beta tester / design partner',
       // Low commitment - looking for
-      'customer_introduction': 'Customer/client introduction',
-      'investor_introduction': 'Investor introduction',
-      'expert_introduction': 'Expert introduction',
+      'introduction': 'Introduction to someone specific',
       'quick_consultation': 'Quick consultation (30 min)',
-      'coffee_chat': 'Coffee chat / networking',
-      'event_coattendee': 'Event co-attendee',
-      'one_time_service': 'One-time service need',
+      'coffee_chats': 'Coffee chats / networking',
       // High commitment - open to
       'being_technical_cofounder': 'Being a technical cofounder',
       'being_business_cofounder': 'Being a business cofounder',
@@ -268,13 +324,12 @@ export default function ProfilePage() {
       // Medium commitment - open to
       'mentoring': 'Advising / mentoring',
       'project_collaboration': 'Collaborating on projects',
-      'providing_services': 'Providing services (design, dev, consulting)',
+      'providing_services': 'Providing services',
       'being_beta_tester': 'Being a beta tester',
       // Low commitment - open to
       'making_introductions': 'Making introductions',
-      'providing_consultation': 'Providing quick consultations (30 min)',
+      'offering_consultation': 'Offering quick consultations (30 min)',
       'coffee_chats': 'Coffee chats / networking',
-      'one_time_help': 'One-time help',
       'other': 'Other'
     };
     
@@ -391,13 +446,9 @@ export default function ProfilePage() {
   ];
 
   const lookingForLowOptions = [
-    { type: 'customer_introduction', label: 'Customer/client introduction' },
-    { type: 'investor_introduction', label: 'Investor introduction' },
-    { type: 'expert_introduction', label: 'Expert introduction' },
+    { type: 'introduction', label: 'Introduction to someone specific' },
     { type: 'quick_consultation', label: 'Quick consultation (30 min)' },
-    { type: 'coffee_chat', label: 'Coffee chat / networking' },
-    { type: 'event_coattendee', label: 'Event co-attendee' },
-    { type: 'one_time_service', label: 'One-time service need' },
+    { type: 'coffee_chats', label: 'Coffee chats / networking' },
     { type: 'other', label: 'Other' }
   ];
 
@@ -412,16 +463,15 @@ export default function ProfilePage() {
   const openToMediumOptions = [
     { type: 'mentoring', label: 'Advising / mentoring' },
     { type: 'project_collaboration', label: 'Collaborating on projects' },
-    { type: 'providing_services', label: 'Providing services (design, dev, consulting)' },
+    { type: 'providing_services', label: 'Providing services' },
     { type: 'being_beta_tester', label: 'Being a beta tester' },
     { type: 'other', label: 'Other' }
   ];
 
   const openToLowOptions = [
     { type: 'making_introductions', label: 'Making introductions' },
-    { type: 'providing_consultation', label: 'Providing quick consultations (30 min)' },
+    { type: 'offering_consultation', label: 'Offering quick consultations (30 min)' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'one_time_help', label: 'One-time help' },
     { type: 'other', label: 'Other' }
   ];
 
@@ -436,6 +486,7 @@ export default function ProfilePage() {
               <span className="text-2xl font-bold text-stone-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
             </Link>
             <div className="flex items-center space-x-6">
+              <Link href="/communities" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Communities</Link>
               <Link href="/chat" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Find People</Link>
               <Link href="/saved" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Saved</Link>
               <Link href="/profile" className="text-sm text-stone-900 font-medium">Profile</Link>
@@ -460,7 +511,7 @@ export default function ProfilePage() {
             </div>
             {!isEditing && (
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={handleEditMode}
                 className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
               >
                 Edit Profile
@@ -476,7 +527,9 @@ export default function ProfilePage() {
               </label>
               {!isEditing ? (
                 profilePicture ? (
-                  <img src={profilePicture} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-stone-200" />
+                  <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-stone-200">
+                    <img src={profilePicture} alt="Profile" className="absolute inset-0 w-full h-full object-cover" />
+                  </div>
                 ) : (
                   <div className="w-20 h-20 rounded-full bg-stone-200 flex items-center justify-center text-stone-500 text-sm">
                     No photo
@@ -485,7 +538,9 @@ export default function ProfilePage() {
               ) : (
                 <div className="flex items-center gap-3">
                   {profilePicture && (
-                    <img src={profilePicture} alt="Profile preview" className="w-12 h-12 rounded-full object-cover border border-stone-200" />
+                    <div className="relative w-12 h-12 rounded-full overflow-hidden border border-stone-200">
+                      <img src={profilePicture} alt="Profile preview" className="absolute inset-0 w-full h-full object-cover" />
+                    </div>
                   )}
                   <label
                     htmlFor="profile-picture"
@@ -531,23 +586,25 @@ export default function ProfilePage() {
             {/* Background */}
             <div>
               <label className="block text-sm mb-2 font-medium text-stone-700">
-                Background
+                What have you built or worked on?
               </label>
               {!isEditing ? (
-                <p className="text-sm text-stone-700 whitespace-pre-wrap">{background || 'Not provided'}</p>
+                <p className={`text-sm whitespace-pre-wrap ${background && background !== 'Profile incomplete' ? 'text-stone-700' : 'text-stone-400'}`}>
+                  {background && background !== 'Profile incomplete' ? background : 'Not provided'}
+                </p>
               ) : (
                 <>
                   <textarea
                     value={background}
                     onChange={(e) => setBackground(e.target.value)}
-                    rows={5}
-                    className={`w-full px-4 py-3.5 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[140px] transition-colors ${
+                    rows={3}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
                       showValidation && background.length < 150
                         ? 'border-red-300 bg-red-50/30 focus:border-red-500'
                         : 'border-stone-200 focus:border-teal-600'
                     }`}
                     style={{ lineHeight: '1.6' }}
-                    placeholder="What's your background? What have you built or worked on?"
+                    placeholder="e.g., Product manager at HubSpot for 4 years, shipped features used by 10k+ customers, worked across design and engineering teams..."
                   />
                   <p className={`mt-2 text-xs ${background.length >= 150 ? 'text-teal-600' : showValidation && background.length < 150 ? 'text-red-600' : 'text-stone-400'}`}>
                     {background.length}/150 minimum
@@ -559,23 +616,25 @@ export default function ProfilePage() {
             {/* Expertise */}
             <div>
               <label className="block text-sm mb-2 font-medium text-stone-700">
-                Expertise
+                How can you help others? What do you bring to the table?
               </label>
               {!isEditing ? (
-                <p className="text-sm text-stone-700 whitespace-pre-wrap">{expertise || 'Not provided'}</p>
+                <p className={`text-sm whitespace-pre-wrap ${expertise && expertise !== 'Profile incomplete' ? 'text-stone-700' : 'text-stone-400'}`}>
+                  {expertise && expertise !== 'Profile incomplete' ? expertise : 'Not provided'}
+                </p>
               ) : (
                 <>
                   <textarea
                     value={expertise}
                     onChange={(e) => setExpertise(e.target.value)}
-                    rows={5}
-                    className={`w-full px-4 py-3.5 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[140px] transition-colors ${
+                    rows={3}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
                       showValidation && expertise.length < 150
                         ? 'border-red-300 bg-red-50/30 focus:border-red-500'
                         : 'border-stone-200 focus:border-teal-600'
                     }`}
                     style={{ lineHeight: '1.6' }}
-                    placeholder="What expertise do you have to offer?"
+                    placeholder="e.g., Financial modeling, fundraising strategy, investor pitch development. Know several angel investors in the Maine ecosystem who invest in early-stage climate tech."
                   />
                   <p className={`mt-2 text-xs ${expertise.length >= 150 ? 'text-teal-600' : showValidation && expertise.length < 150 ? 'text-red-600' : 'text-stone-400'}`}>
                     {expertise.length}/150 minimum
@@ -729,6 +788,27 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Not Looking For */}
+            <div className="pt-4">
+              <label className="block text-sm mb-2 font-medium text-stone-700">
+                What are you NOT looking for? <span className="text-stone-400">(optional)</span>
+              </label>
+              {!isEditing ? (
+                <p className={`text-sm whitespace-pre-wrap ${notLookingFor ? 'text-stone-700' : 'text-stone-400'}`}>
+                  {notLookingFor || 'Not specified'}
+                </p>
+              ) : (
+                <textarea
+                  value={notLookingFor}
+                  onChange={(e) => setNotLookingFor(e.target.value)}
+                  rows={2}
+                  className="w-full px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:border-teal-600 focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 transition-colors"
+                  style={{ lineHeight: '1.6' }}
+                  placeholder="e.g., Not interested in sales roles, avoid cryptocurrency projects"
+                />
+              )}
             </div>
 
             {/* Visibility Setting */}

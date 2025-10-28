@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useUser, useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Send, User, Mail, Linkedin, Heart, X, ChevronRight, Search } from 'lucide-react';
-import OnboardingModal from '../components/OnboardingModal';
+import CompleteProfileModal from '../components/CompleteProfileModal';
 import UserProfileDropdown from '../components/UserProfileDropdown';
 
 const supabase = createClient(
@@ -523,7 +523,7 @@ export default function ChatPage() {
 
   return (
     <>
-      <OnboardingModal />
+      <CompleteProfileModal />
       <div className="h-screen flex flex-col bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
         {/* Navbar */}
         <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20 relative z-50">
@@ -534,6 +534,7 @@ export default function ChatPage() {
               <span className="text-2xl font-bold text-stone-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
             </Link>
             <div className="hidden md:flex items-center space-x-6">
+              <Link href="/communities" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Communities</Link>
               <Link href="/chat" className="text-sm text-stone-900 font-medium">Find People</Link>
               <Link href="/saved" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Saved</Link>
               <Link href="/profile" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Profile</Link>

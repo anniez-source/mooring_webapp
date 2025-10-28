@@ -235,6 +235,7 @@ export default function SavedContactsPage() {
               <span className="text-2xl font-bold text-stone-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
             </Link>
             <div className="flex items-center space-x-6">
+              <Link href="/communities" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Communities</Link>
               <Link href="/chat" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Find People</Link>
               <Link href="/saved" className="text-sm text-stone-900 font-medium">Saved</Link>
               <Link href="/profile" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Profile</Link>

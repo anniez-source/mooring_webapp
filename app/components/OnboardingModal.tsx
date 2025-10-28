@@ -25,6 +25,7 @@ export default function OnboardingModal() {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [currentWork, setCurrentWork] = useState('');
   const [expertiseOffering, setExpertiseOffering] = useState('');
+  const [notLookingFor, setNotLookingFor] = useState('');
   const [lookingFor, setLookingFor] = useState<CommitmentItem[]>([]);
   const [openTo, setOpenTo] = useState<CommitmentItem[]>([]);
   const [consent, setConsent] = useState(false);
@@ -34,10 +35,10 @@ export default function OnboardingModal() {
 
   // Expandable sections state
   const [expandedLookingFor, setExpandedLookingFor] = useState<{[key: string]: boolean}>({
-    high: true, medium: true, low: true
+    high: false, medium: false, low: false
   });
   const [expandedOpenTo, setExpandedOpenTo] = useState<{[key: string]: boolean}>({
-    high: true, medium: true, low: true
+    high: false, medium: false, low: false
   });
 
   const toggleLookingFor = (commitment: 'high' | 'medium' | 'low', type: string) => {
@@ -117,8 +118,15 @@ export default function OnboardingModal() {
           return;
         }
 
-        const hasNeverCompletedProfile = !profileData?.background && !profileData?.expertise;
-        setShowModal(hasNeverCompletedProfile);
+        const hasIncompleteProfile = 
+          !profileData?.background || 
+          !profileData?.expertise ||
+          profileData?.background === 'Profile incomplete' ||
+          profileData?.expertise === 'Profile incomplete' ||
+          profileData?.background.length < 150 ||
+          profileData?.expertise.length < 150;
+        
+        setShowModal(hasIncompleteProfile);
         setIsChecking(false);
       } catch (error) {
         setShowModal(true);
@@ -394,7 +402,7 @@ export default function OnboardingModal() {
   const lookingForLowOptions = [
     { type: 'introduction', label: 'Introduction to someone specific' },
     { type: 'quick_consultation', label: 'Quick consultation (30 min)' },
-    { type: 'coffee_chat', label: 'Coffee chat / networking' },
+    { type: 'coffee_chats', label: 'Coffee chats / networking' },
     { type: 'other', label: 'Other' }
   ];
 
@@ -422,9 +430,9 @@ export default function OnboardingModal() {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[900px] max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-stone-200 px-10 py-6 rounded-t-2xl">
+        <div className="sticky top-0 bg-white border-b border-stone-200 px-10 py-6 rounded-t-2xl z-10">
           <h1 className="text-2xl font-semibold text-stone-900 tracking-tight" style={{ fontFamily: 'var(--font-ibm-plex)', fontWeight: 600 }}>
             Complete Your Profile
           </h1>
@@ -433,7 +441,7 @@ export default function OnboardingModal() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-10 space-y-12">
+        <form onSubmit={handleSubmit} className="p-10 space-y-8">
           {/* Optional Profile Fields */}
           <div className="space-y-6 pb-8 border-b border-stone-200">
             <div>
@@ -442,7 +450,9 @@ export default function OnboardingModal() {
               </label>
               <div className="flex items-center gap-3">
                 {profilePicture && (
-                  <img src={profilePicture} alt="Profile preview" className="w-12 h-12 rounded-full object-cover border border-stone-200" />
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border border-stone-200">
+                    <img src={profilePicture} alt="Profile preview" className="absolute inset-0 w-full h-full object-cover" />
+                  </div>
                 )}
                 <label
                   htmlFor="profile-picture"
@@ -476,20 +486,20 @@ export default function OnboardingModal() {
           </div>
 
           {/* About You Section */}
-          <div className="space-y-8">
+          <div className="space-y-5">
             <h2 className="text-lg font-semibold text-stone-800" style={{ fontFamily: 'var(--font-ibm-plex)' }}>
               About You
             </h2>
             
             <div>
               <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
-                What's your background? What have you built or worked on?
+                What have you built or worked on?
               </label>
               <textarea
                 value={currentWork}
                 onChange={(e) => setCurrentWork(e.target.value)}
-                rows={5}
-                className={`w-full px-4 py-3.5 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[140px] transition-colors ${
+                rows={3}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
                   showValidation && currentWork.length < 150
                     ? 'border-red-300 bg-red-50/30 focus:border-red-500'
                     : 'border-stone-200 focus:border-teal-600'
@@ -504,24 +514,25 @@ export default function OnboardingModal() {
 
             <div>
               <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
-                What expertise do you have to offer?
+                How can you help others? What do you bring to the table?
               </label>
               <textarea
                 value={expertiseOffering}
                 onChange={(e) => setExpertiseOffering(e.target.value)}
-                rows={5}
-                className={`w-full px-4 py-3.5 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[140px] transition-colors ${
+                rows={3}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
                   showValidation && expertiseOffering.length < 150
                     ? 'border-red-300 bg-red-50/30 focus:border-red-500'
                     : 'border-stone-200 focus:border-teal-600'
                 }`}
                 style={{ boxShadow: 'none', lineHeight: '1.6' }}
-                placeholder="e.g., Climate tech and carbon markets, energy policy, product strategy, user research..."
+                placeholder="e.g., Financial modeling, fundraising strategy, investor pitch development. Know several angel investors in the Maine ecosystem who invest in early-stage climate tech."
               />
               <p className={`mt-2 ${expertiseOffering.length >= 150 ? 'text-teal-600' : showValidation && expertiseOffering.length < 150 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
                 {expertiseOffering.length}/150 minimum
               </p>
             </div>
+
           </div>
 
           {/* Commitment Sections */}
@@ -637,6 +648,21 @@ export default function OnboardingModal() {
                 </p>
               )}
             </div>
+          </div>
+
+          {/* Not Looking For */}
+          <div>
+            <label className="block text-sm mb-2 font-medium text-stone-700">
+              What are you NOT looking for? <span className="text-stone-400">(optional)</span>
+            </label>
+            <textarea
+              value={notLookingFor}
+              onChange={(e) => setNotLookingFor(e.target.value)}
+              rows={2}
+              className="w-full px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:border-teal-600 focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 transition-colors"
+              style={{ boxShadow: 'none', lineHeight: '1.6' }}
+              placeholder="e.g., Not interested in sales roles, avoid cryptocurrency projects"
+            />
           </div>
 
           {/* Consent Checkbox */}

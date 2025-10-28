@@ -48,7 +48,6 @@ export default function HomePage() {
             <div className="hidden md:block">
               <div className="flex items-center space-x-8">
                 <Link href="/" className="text-base text-stone-600 hover:text-stone-900 transition-colors font-sans">Home</Link>
-                <Link href="/contact" className="text-base text-stone-600 hover:text-stone-900 transition-colors font-sans">Contact</Link>
                 <Link href="/login" className="bg-teal-600 text-white px-5 py-2 rounded-lg text-base font-medium hover:bg-teal-700 transition-colors font-sans">Log In</Link>
               </div>
             </div>
@@ -63,15 +62,11 @@ export default function HomePage() {
             Your Members Can't Find Each Other.
           </h1>
           <p className="text-xl md:text-2xl text-stone-600 mb-8 max-w-3xl mx-auto leading-relaxed font-medium">
-            Mooring fixes this with connection infrastructure for accelerators, universities, and innovation hubs.
+            Mooring fixes this with connection infrastructure for accelerators and innovation hubs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/contact" className="inline-flex items-center gap-3 bg-teal-600 text-white px-8 py-4 rounded-2xl text-base font-semibold tracking-wide hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-              <span>Book a Demo</span>
-            </Link>
-            <Link href="/contact" className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm border-2 border-teal-600 text-teal-600 px-8 py-4 rounded-2xl text-base font-semibold tracking-wide hover:bg-teal-600 hover:text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-              <span>Learn More</span>
-              <ArrowRight className="w-5 h-5" />
+            <Link href="/login" className="inline-flex items-center gap-3 bg-teal-600 text-white px-8 py-4 rounded-2xl text-base font-semibold tracking-wide hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+              <span>Get Started</span>
             </Link>
           </div>
         </div>
@@ -199,8 +194,8 @@ export default function HomePage() {
           </div>
           
           <div className="text-center">
-            <Link href="/contact" className="inline-flex items-center gap-3 bg-teal-600 text-white px-10 py-5 rounded-2xl text-lg font-semibold tracking-wide hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
-              <span>Book a Demo</span>
+            <Link href="/login" className="inline-flex items-center gap-3 bg-teal-600 text-white px-10 py-5 rounded-2xl text-lg font-semibold tracking-wide hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+              <span>Get Started</span>
               <ArrowRight className="w-6 h-6" />
             </Link>
           </div>
