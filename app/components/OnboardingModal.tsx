@@ -388,15 +388,15 @@ export default function OnboardingModal() {
     { type: 'technical_cofounder', label: 'Technical cofounder' },
     { type: 'business_cofounder', label: 'Business cofounder' },
     { type: 'domain_expert_cofounder', label: 'Domain expert cofounder' },
-    { type: 'cocreator_founding_team', label: 'Co-creator / founding team member' },
+    { type: 'founding_team_member', label: 'Founding team member' },
     { type: 'other', label: 'Other' }
   ];
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
     { type: 'project_collaborator', label: 'Project collaborator' },
-    { type: 'service_provider', label: 'Service provider (ongoing)' },
-    { type: 'beta_tester', label: 'Beta tester / design partner' },
+    { type: 'service_provider', label: 'Providing paid services' },
+    { type: 'beta_tester', label: 'Beta tester' },
     { type: 'other', label: 'Other' }
   ];
 
@@ -411,14 +411,14 @@ export default function OnboardingModal() {
     { type: 'being_technical_cofounder', label: 'Being a technical cofounder' },
     { type: 'being_business_cofounder', label: 'Being a business cofounder' },
     { type: 'being_domain_expert_cofounder', label: 'Being a domain expert cofounder' },
-    { type: 'being_cocreator_founding_team', label: 'Joining as co-creator / founding team' },
+    { type: 'joining_founding_team', label: 'Joining as founding team member' },
     { type: 'other', label: 'Other' }
   ];
 
   const openToMediumOptions = [
     { type: 'mentoring', label: 'Advising / mentoring' },
-    { type: 'providing_services', label: 'Providing services (ongoing)' },
-    { type: 'being_beta_tester', label: 'Being a beta tester / design partner' },
+    { type: 'providing_services', label: 'Providing paid services' },
+    { type: 'being_beta_tester', label: 'Being a beta tester' },
     { type: 'other', label: 'Other' }
   ];
 

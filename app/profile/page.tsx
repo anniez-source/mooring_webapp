@@ -307,14 +307,15 @@ export default function ProfilePage() {
       'technical_cofounder': 'Technical cofounder',
       'business_cofounder': 'Business cofounder',
       'domain_expert_cofounder': 'Domain expert cofounder',
-      'cocreator_founding_team': 'Co-creator / founding team member',
-      'long_term_collaborator': 'Long-term project collaborator',
-      'team_member': 'Team member (employee/contractor)',
+      'founding_team_member': 'Founding team member',
+      'cocreator_founding_team': 'Co-creator / founding team member', // legacy
+      'long_term_collaborator': 'Long-term project collaborator', // legacy
+      'team_member': 'Team member (employee/contractor)', // legacy
       // Medium commitment - looking for
       'advisor': 'Advisor or mentor',
       'project_collaborator': 'Project collaborator',
-      'service_provider': 'Service provider (ongoing)',
-      'beta_tester': 'Beta tester / design partner',
+      'service_provider': 'Providing paid services',
+      'beta_tester': 'Beta tester',
       // Low commitment - looking for
       'introduction': 'Introduction to someone specific',
       'coffee_chats': 'Coffee chats / networking',
@@ -324,13 +325,14 @@ export default function ProfilePage() {
       'being_technical_cofounder': 'Being a technical cofounder',
       'being_business_cofounder': 'Being a business cofounder',
       'being_domain_expert_cofounder': 'Being a domain expert cofounder',
-      'being_cocreator_founding_team': 'Joining as co-creator / founding team',
-      'long_term_collaboration': 'Long-term collaboration',
-      'joining_team': 'Joining a team',
+      'joining_founding_team': 'Joining as founding team member',
+      'being_cocreator_founding_team': 'Joining as co-creator / founding team', // legacy
+      'long_term_collaboration': 'Long-term collaboration', // legacy
+      'joining_team': 'Joining a team', // legacy
       // Medium commitment - open to
       'mentoring': 'Advising / mentoring',
-      'project_collaboration': 'Collaborating on projects',
-      'providing_services': 'Providing services',
+      'project_collaboration': 'Collaborating on projects', // legacy
+      'providing_services': 'Providing paid services',
       'being_beta_tester': 'Being a beta tester',
       // Low commitment - open to
       'making_introductions': 'Making introductions',
@@ -440,15 +442,15 @@ export default function ProfilePage() {
     { type: 'technical_cofounder', label: 'Technical cofounder' },
     { type: 'business_cofounder', label: 'Business cofounder' },
     { type: 'domain_expert_cofounder', label: 'Domain expert cofounder' },
-    { type: 'cocreator_founding_team', label: 'Co-creator / founding team member' },
+    { type: 'founding_team_member', label: 'Founding team member' },
     { type: 'other', label: 'Other' }
   ];
 
   const lookingForMediumOptions = [
     { type: 'advisor', label: 'Advisor or mentor' },
     { type: 'project_collaborator', label: 'Project collaborator' },
-    { type: 'service_provider', label: 'Service provider (ongoing)' },
-    { type: 'beta_tester', label: 'Beta tester / design partner' },
+    { type: 'service_provider', label: 'Providing paid services' },
+    { type: 'beta_tester', label: 'Beta tester' },
     { type: 'other', label: 'Other' }
   ];
 
@@ -463,14 +465,14 @@ export default function ProfilePage() {
     { type: 'being_technical_cofounder', label: 'Being a technical cofounder' },
     { type: 'being_business_cofounder', label: 'Being a business cofounder' },
     { type: 'being_domain_expert_cofounder', label: 'Being a domain expert cofounder' },
-    { type: 'being_cocreator_founding_team', label: 'Joining as co-creator / founding team' },
+    { type: 'joining_founding_team', label: 'Joining as founding team member' },
     { type: 'other', label: 'Other' }
   ];
 
   const openToMediumOptions = [
     { type: 'mentoring', label: 'Advising / mentoring' },
-    { type: 'providing_services', label: 'Providing services (ongoing)' },
-    { type: 'being_beta_tester', label: 'Being a beta tester / design partner' },
+    { type: 'providing_services', label: 'Providing paid services' },
+    { type: 'being_beta_tester', label: 'Being a beta tester' },
     { type: 'other', label: 'Other' }
   ];
 
