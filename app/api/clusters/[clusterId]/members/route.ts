@@ -18,6 +18,15 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get database user_id for current user
+    const { data: userData } = await supabase
+      .from('users')
+      .select('user_id')
+      .eq('clerk_user_id', userId)
+      .single();
+    
+    const dbUserId = userData?.user_id;
+
     const { clusterId } = await params;
     console.log('[Cluster Members API] Fetching cluster:', clusterId);
 
@@ -60,12 +69,13 @@ export async function GET(
       });
     }
 
-    // Get member profiles
+    // Get member profiles (excluding current user)
     const { data: members, error: membersError } = await supabase
       .from('profiles')
       .select('user_id, name, email, background, expertise, interests, how_i_help, linkedin_url, profile_picture')
       .in('user_id', memberIds)
-      .eq('opted_in', true);
+      .eq('opted_in', true)
+      .neq('user_id', dbUserId || '00000000-0000-0000-0000-000000000000');
 
     if (membersError) {
       console.error('Error fetching members:', membersError);

@@ -78,11 +78,15 @@ MATCHING LOGIC:
 
 CRITICAL: Return the top 6 most relevant matches. No more, no less (unless fewer than 6 exist).
 
-Lead with summary:
-"Here are [N] people [working in X / who offer Y]. You can save anyone you'd like to connect with."
+Lead with summary - BE SPECIFIC ABOUT WHAT YOU'RE SHOWING:
+- If showing exactly 6: "Here are 6 people [working in X / who offer Y]..."
+- If showing fewer than 6: "Here are [actual count] people..."
+- If you found MORE than 6 total matches: "Here are the top 6 of [total count] people..."
 
-Optional helpful line (not required):
-"Want to narrow it down? I can filter by [relevant dimension]."
+Examples:
+✅ "Here are 6 people who offer coffee chats..." (showing all 6 found)
+✅ "Here are the top 6 of 11 people who offer coffee chats..." (found 11, showing top 6)
+✅ "Here are 3 people with marine biology background..." (only found 3)
 
 Then show exactly 6 matches (or all if < 6):
 
@@ -258,37 +262,41 @@ export async function POST(req: NextRequest) {
         );
 
         if (!matchError && matches) {
-          profiles = matches;
-          console.log(`[Chat API] Vector search found ${profiles.length} candidates`);
+          // Filter out current user from results
+          profiles = matches.filter((p: any) => p.user_id !== dbUserId);
+          console.log(`[Chat API] Vector search found ${profiles.length} candidates (excluding self)`);
         } else {
           console.error('[Chat API] Vector search failed, falling back to all profiles:', matchError);
-          // Fall back to fetching all profiles
+          // Fall back to fetching all profiles (excluding current user)
           const { data: allProfiles, error: allProfilesError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('opted_in', true);
+            .eq('opted_in', true)
+            .neq('user_id', dbUserId || '00000000-0000-0000-0000-000000000000');
           
           profiles = allProfiles || [];
           profilesError = allProfilesError;
         }
       } else {
-        // No embeddings available - fetch all opted-in profiles (fallback)
+        // No embeddings available - fetch all opted-in profiles (fallback, excluding current user)
         console.log('[Chat API] OpenAI not configured, using full profile search');
         const { data: allProfiles, error: allProfilesError } = await supabase
           .from('profiles')
           .select('*')
-          .eq('opted_in', true);
+          .eq('opted_in', true)
+          .neq('user_id', dbUserId || '00000000-0000-0000-0000-000000000000');
         
         profiles = allProfiles || [];
         profilesError = allProfilesError;
       }
     } catch (searchError) {
       console.error('[Chat API] Search error, falling back:', searchError);
-      // Fall back to fetching all profiles
+      // Fall back to fetching all profiles (excluding current user)
       const { data: allProfiles, error: allProfilesError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('opted_in', true);
+        .eq('opted_in', true)
+        .neq('user_id', dbUserId || '00000000-0000-0000-0000-000000000000');
       
       profiles = allProfiles || [];
       profilesError = allProfilesError;

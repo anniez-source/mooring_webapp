@@ -346,7 +346,7 @@ export default function SavedContactsPage() {
                     </div>
                   ) : (
                     /* Expanded View - Full Profile Card */
-                    <div className="space-y-4 pr-8">
+                    <div className="space-y-6 pr-8">
                       {/* Header with profile image */}
                       <div className="flex items-start gap-3">
                         <div className="w-11 h-11 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -398,27 +398,44 @@ export default function SavedContactsPage() {
                         </div>
                       </div>
 
-                      {/* AI Match Reason */}
-                      <div className="border-l-2 border-stone-900 pl-3 py-1">
-                        <p className="text-xs font-medium text-stone-500 mb-1">Why relevant</p>
-                        <p className="text-xs text-stone-700 leading-relaxed" style={{ lineHeight: '1.5' }}>
-                          {contact.why_saved}
+                      {/* Why You Matched Card */}
+                      <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-300 rounded-xl p-4 shadow-sm">
+                        <p className="text-sm font-bold text-teal-900 mb-3 flex items-center gap-2">
+                          {contact.why_saved?.toLowerCase().includes('saved from community') || contact.why_saved === 'Saved from Community' ? (
+                            <>
+                              <Heart className="w-4 h-4 fill-teal-600 text-teal-600" />
+                              <span>Saved from Community</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>✨ Why You Matched</span>
+                            </>
+                          )}
+                        </p>
+                        <p className="text-sm text-stone-800 leading-relaxed" style={{ lineHeight: '1.7' }}>
+                          {contact.why_saved?.toLowerCase().includes('saved from community') || contact.why_saved === 'Saved from Community' 
+                            ? 'You saved this person from browsing your community clusters.'
+                            : contact.why_saved
+                          }
                         </p>
                       </div>
 
+                      {/* Divider */}
+                      <div className="border-t border-stone-200 -mx-2"></div>
+
                       {/* Background */}
-                      <div>
-                        <h4 className="text-xs font-medium text-stone-500 mb-1.5">Background</h4>
-                        <p className="text-xs text-stone-700 leading-relaxed" style={{ lineHeight: '1.5' }}>
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wide">Background</h4>
+                        <p className="text-sm text-stone-700 leading-relaxed" style={{ lineHeight: '1.7' }}>
                           {contact.background}
                         </p>
                       </div>
 
                       {/* Interests */}
                       {contact.interests && (
-                        <div>
-                          <h4 className="text-xs font-medium text-stone-500 mb-1.5">Problems They're Obsessed With</h4>
-                          <p className="text-xs text-stone-700 leading-relaxed" style={{ lineHeight: '1.5' }}>
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wide">Problems They're Obsessed With</h4>
+                          <p className="text-sm text-stone-700 leading-relaxed" style={{ lineHeight: '1.7' }}>
                             {contact.interests}
                           </p>
                         </div>
@@ -426,9 +443,9 @@ export default function SavedContactsPage() {
 
                       {/* Expertise */}
                       {contact.expertise && (
-                        <div>
-                          <h4 className="text-xs font-medium text-stone-500 mb-1.5">Expertise</h4>
-                          <p className="text-xs text-stone-700 leading-relaxed" style={{ lineHeight: '1.5' }}>
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wide">Expertise</h4>
+                          <p className="text-sm text-stone-700 leading-relaxed" style={{ lineHeight: '1.7' }}>
                             {contact.expertise}
                           </p>
                         </div>
@@ -436,18 +453,21 @@ export default function SavedContactsPage() {
 
                       {/* How They Help */}
                       {contact.how_i_help && contact.how_i_help.length > 0 && (
-                        <div>
-                          <h4 className="text-xs font-medium text-stone-500 mb-1.5">How They Help</h4>
-                          <div className="space-y-1">
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wide">How They Help</h4>
+                          <div className="flex flex-wrap gap-2">
                             {contact.how_i_help.map((help: string, idx: number) => (
-                              <div key={idx} className="flex items-center gap-1.5 text-xs text-stone-700">
-                                <span className="w-1 h-1 rounded-full bg-stone-400"></span>
-                                {help === 'advising' && 'Advising or mentoring'}
-                                {help === 'coffee_chats' && 'Coffee chats about my domain'}
-                                {help === 'feedback' && 'Feedback or spot advice'}
-                                {help === 'introductions' && 'Making introductions'}
-                                {help === 'not_available' && 'Not available right now'}
-                              </div>
+                              <span 
+                                key={idx} 
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-800 rounded-full text-xs font-medium border border-amber-200"
+                              >
+                                {help === 'advising' && '💡 Advising or mentoring'}
+                                {help === 'coffee_chats' && '☕ Coffee chats'}
+                                {help === 'feedback' && '💬 Feedback'}
+                                {help === 'introductions' && '🤝 Making introductions'}
+                                {help === 'cofounding' && '🚀 Co-founding'}
+                                {help === 'not_available' && '⏸️ Not available right now'}
+                              </span>
                             ))}
                           </div>
                         </div>

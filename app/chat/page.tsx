@@ -704,13 +704,13 @@ export default function ChatPage() {
                                 )}
                               </div>
 
-                    <button
+                              <button
                                 onClick={() => setExpandedMatchId(null)}
                                 className="text-stone-600 hover:text-stone-900 text-xs underline"
                               >
                                 Show less
-                    </button>
-                      </div>
+                              </button>
+                            </div>
                           ) : (
                             <div>
                               <p className="text-xs text-stone-600 mb-2 line-clamp-2 leading-relaxed">

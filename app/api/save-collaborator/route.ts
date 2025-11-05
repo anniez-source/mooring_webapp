@@ -45,6 +45,14 @@ export async function POST(req: NextRequest) {
     
     console.log('[Save Contact] User found:', userData.user_id);
 
+    // Prevent users from saving themselves
+    if (userData.user_id === savedProfileId) {
+      console.log('[Save Contact] User tried to save themselves');
+      return NextResponse.json({ 
+        error: 'You cannot save yourself as a contact' 
+      }, { status: 400 });
+    }
+
     // Verify the profile exists
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')

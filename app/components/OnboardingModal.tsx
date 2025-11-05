@@ -50,9 +50,15 @@ export default function OnboardingModal() {
   const toggleHowIHelp = (value: string) => {
     setHowIHelp(prev => {
       if (prev.includes(value)) {
+        // Uncheck the clicked value
         return prev.filter(item => item !== value);
       } else {
-        return [...prev, value];
+        // If clicking "not_available", clear all other selections
+        if (value === 'not_available') {
+          return ['not_available'];
+        }
+        // If clicking anything else, remove "not_available" and add the new value
+        return [...prev.filter(item => item !== 'not_available'), value];
       }
     });
   };
