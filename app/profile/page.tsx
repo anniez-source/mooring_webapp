@@ -6,17 +6,11 @@ import { useUser } from '@clerk/nextjs';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import UserProfileDropdown from '../components/UserProfileDropdown';
-import { Coffee, Flame, Handshake } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
-
-type CommitmentItem = {
-  commitment: 'high' | 'medium' | 'low';
-  type: string;
-};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -32,22 +26,10 @@ export default function ProfilePage() {
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [background, setBackground] = useState('');
-  const [workingOn, setWorkingOn] = useState('');
+  const [interests, setInterests] = useState('');
   const [expertise, setExpertise] = useState('');
-  const [notLookingFor, setNotLookingFor] = useState('');
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [resumeFilename, setResumeFilename] = useState<string>('');
-  const [lookingFor, setLookingFor] = useState<CommitmentItem[]>([]);
-  const [openTo, setOpenTo] = useState<CommitmentItem[]>([]);
+  const [howIHelp, setHowIHelp] = useState<string[]>([]);
   const [optedIn, setOptedIn] = useState(false);
-
-  // Expandable sections state
-  const [expandedLookingFor, setExpandedLookingFor] = useState<{[key: string]: boolean}>({
-    high: false, medium: false, low: false
-  });
-  const [expandedOpenTo, setExpandedOpenTo] = useState<{[key: string]: boolean}>({
-    high: false, medium: false, low: false
-  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -87,12 +69,9 @@ export default function ProfilePage() {
           setLinkedinUrl(profileData.linkedin_url || '');
           // Filter out "Profile incomplete" placeholders
           setBackground(profileData.background === 'Profile incomplete' ? '' : (profileData.background || ''));
-          setWorkingOn(profileData.working_on === 'Profile incomplete' ? '' : (profileData.working_on || ''));
+          setInterests(profileData.interests === 'Profile incomplete' ? '' : (profileData.interests || ''));
           setExpertise(profileData.expertise === 'Profile incomplete' ? '' : (profileData.expertise || ''));
-          setNotLookingFor(profileData.not_looking_for || '');
-          setResumeFilename(profileData.resume_filename || '');
-          setLookingFor(profileData.looking_for || []);
-          setOpenTo(profileData.open_to || []);
+          setHowIHelp(profileData.how_i_help || []);
           setOptedIn(profileData.opted_in || false);
         }
 
@@ -107,37 +86,15 @@ export default function ProfilePage() {
   }, [user, isLoaded]);
 
   const handleEditMode = () => {
-    // Clear "Profile incomplete" placeholders when entering edit mode
-    if (background === 'Profile incomplete') {
-      setBackground('');
-    }
-    if (workingOn === 'Profile incomplete') {
-      setWorkingOn('');
-    }
-    if (expertise === 'Profile incomplete') {
-      setExpertise('');
-    }
     setIsEditing(true);
   };
 
-  const toggleLookingFor = (commitment: 'high' | 'medium' | 'low', type: string) => {
-    setLookingFor(prev => {
-      const exists = prev.find(item => item.commitment === commitment && item.type === type);
-      if (exists) {
-        return prev.filter(item => !(item.commitment === commitment && item.type === type));
+  const toggleHowIHelp = (value: string) => {
+    setHowIHelp(prev => {
+      if (prev.includes(value)) {
+        return prev.filter(item => item !== value);
       } else {
-        return [...prev, { commitment, type }];
-      }
-    });
-  };
-
-  const toggleOpenTo = (commitment: 'high' | 'medium' | 'low', type: string) => {
-    setOpenTo(prev => {
-      const exists = prev.find(item => item.commitment === commitment && item.type === type);
-      if (exists) {
-        return prev.filter(item => !(item.commitment === commitment && item.type === type));
-      } else {
-        return [...prev, { commitment, type }];
+        return [...prev, value];
       }
     });
   };
@@ -169,20 +126,14 @@ export default function ProfilePage() {
 
   const validate = () => {
     const newErrors: string[] = [];
-    if (background.length < 150) {
-      newErrors.push('Background must be at least 150 characters');
+    if (!background || background.trim().length < 50) {
+      newErrors.push('Please share your story (at least 50 characters)');
     }
-    if (workingOn.length < 100) {
-      newErrors.push('What you\'re working on must be at least 100 characters');
+    if (!interests || interests.trim().length < 30) {
+      newErrors.push('Please share what problems you\'re obsessed with (at least 30 characters)');
     }
-    if (expertise.length < 150) {
-      newErrors.push('Expertise must be at least 150 characters');
-    }
-    if (lookingFor.length === 0) {
-      newErrors.push('Please select at least one option in "I\'m looking for"');
-    }
-    if (openTo.length === 0) {
-      newErrors.push('Please select at least one option in "I\'m open to"');
+    if (!expertise || expertise.trim().length < 30) {
+      newErrors.push('Please share your expertise (at least 30 characters)');
     }
     
     if (linkedinUrl && !linkedinUrl.match(/^https?:\/\/(www\.)?linkedin\.com\/.+/i)) {
@@ -191,28 +142,6 @@ export default function ProfilePage() {
     return newErrors;
   };
 
-  const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Check file type
-      const validTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-        'application/msword' // .doc
-      ];
-      if (!validTypes.includes(file.type)) {
-        setErrors(['Please upload a PDF or Word document']);
-        return;
-      }
-      // Check file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(['Resume file must be less than 5MB']);
-        return;
-      }
-      setResumeFile(file);
-      setErrors([]);
-    }
-  };
 
   const handleSave = async () => {
     setErrors([]);
@@ -243,15 +172,12 @@ export default function ProfilePage() {
         name: userData.name,
         email: userData.email,
         background,
-        working_on: workingOn,
+        interests,
         expertise,
-        looking_for: lookingFor,
-        open_to: openTo,
+        how_i_help: howIHelp,
         opted_in: optedIn,
         linkedin_url: linkedinUrl || null,
         profile_picture: profilePicture || null,
-        not_looking_for: notLookingFor || null,
-        resume_filename: resumeFile ? resumeFile.name : resumeFilename || null,
         updated_at: new Date().toISOString()
       };
 
@@ -267,6 +193,18 @@ export default function ProfilePage() {
       }
       
       console.log('Profile saved successfully');
+
+      // Generate embedding for the updated profile
+      try {
+        await fetch('/api/generate-embedding', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: userData.user_id })
+        });
+      } catch (embeddingError) {
+        console.error('Error generating embedding:', embeddingError);
+        // Don't fail the profile save if embedding generation fails
+      }
 
       setIsEditing(false);
       setShowValidation(false);
@@ -304,11 +242,9 @@ export default function ProfilePage() {
             setProfilePicture(profileData.profile_picture || null);
             setLinkedinUrl(profileData.linkedin_url || '');
             setBackground(profileData.background === 'Profile incomplete' ? '' : (profileData.background || ''));
-            setWorkingOn(profileData.working_on === 'Profile incomplete' ? '' : (profileData.working_on || ''));
+            setInterests(profileData.interests === 'Profile incomplete' ? '' : (profileData.interests || ''));
             setExpertise(profileData.expertise === 'Profile incomplete' ? '' : (profileData.expertise || ''));
-            setNotLookingFor(profileData.not_looking_for || '');
-            setLookingFor(profileData.looking_for || []);
-            setOpenTo(profileData.open_to || []);
+            setHowIHelp(profileData.how_i_help || []);
             setOptedIn(profileData.opted_in || false);
           }
         }
@@ -332,191 +268,9 @@ export default function ProfilePage() {
   }
 
   const isFormValid =
-    background.length >= 150 &&
-    expertise.length >= 150 &&
-    lookingFor.length > 0 &&
-    openTo.length > 0;
-
-  // Display format helper
-  const formatCommitmentItem = (item: CommitmentItem) => {
-    const labels: {[key: string]: string} = {
-      // High commitment - looking for
-      'technical_cofounder': 'Technical cofounder',
-      'business_cofounder': 'Business cofounder',
-      'domain_expert_cofounder': 'Domain expert cofounder',
-      'founding_team_member': 'Founding team member',
-      'cocreator_founding_team': 'Co-creator / founding team member', // legacy
-      'long_term_collaborator': 'Long-term project collaborator', // legacy
-      'team_member': 'Team member (employee/contractor)', // legacy
-      // Medium commitment - looking for
-      'advisor': 'Advisor or mentor',
-      'project_collaborator': 'Project collaborator',
-      'service_provider': 'Receiving paid services',
-      'beta_tester': 'Beta tester',
-      // Low commitment - looking for
-      'introduction': 'Introductions',
-      'coffee_chats': 'Coffee chats / networking',
-      'feedback': 'Feedback on idea / product',
-      'quick_consultation': 'Quick consultation (30 min)', // legacy
-      // High commitment - open to
-      'being_technical_cofounder': 'Being a technical cofounder',
-      'being_business_cofounder': 'Being a business cofounder',
-      'being_domain_expert_cofounder': 'Being a domain expert cofounder',
-      'joining_founding_team': 'Joining as founding team member',
-      'being_cocreator_founding_team': 'Joining as co-creator / founding team', // legacy
-      'long_term_collaboration': 'Long-term collaboration', // legacy
-      'joining_team': 'Joining a team', // legacy
-      // Medium commitment - open to
-      'mentoring': 'Advising / mentoring',
-      'project_collaboration': 'Collaborating on projects', // legacy
-      'providing_services': 'Providing paid services',
-      'being_beta_tester': 'Being a beta tester',
-      // Low commitment - open to
-      'making_introductions': 'Making introductions',
-      'giving_feedback': 'Giving feedback on ideas / products',
-      'offering_consultation': 'Offering quick consultations (30 min)', // legacy
-      'other': 'Other'
-    };
-    
-    return labels[item.type] || item.type;
-  };
-
-  const getCommitmentIcon = (commitment: string) => {
-    return commitment === 'high' ? Flame : commitment === 'medium' ? Handshake : Coffee;
-  };
-
-  const getCommitmentLabel = (commitment: string) => {
-    return commitment === 'high' ? 'High Commitment' : commitment === 'medium' ? 'Medium Commitment' : 'Low Commitment';
-  };
-
-  // Group items by commitment level for display
-  const groupByCommitment = (items: CommitmentItem[]) => {
-    const grouped: {[key: string]: CommitmentItem[]} = {
-      high: [],
-      medium: [],
-      low: []
-    };
-    items.forEach(item => {
-      grouped[item.commitment].push(item);
-    });
-    return grouped;
-  };
-
-  const CommitmentSection = ({
-    title,
-    subtitle,
-    commitment,
-    Icon,
-    bgColor,
-    options,
-    selectedItems,
-    onToggle,
-    expanded,
-    onToggleExpand
-  }: {
-    title: string;
-    subtitle: string;
-    commitment: 'high' | 'medium' | 'low';
-    Icon: React.ComponentType<{ className?: string }>;
-    bgColor: string;
-    options: { type: string; label: string }[];
-    selectedItems: CommitmentItem[];
-    onToggle: (commitment: 'high' | 'medium' | 'low', type: string) => void;
-    expanded: boolean;
-    onToggleExpand: () => void;
-  }) => (
-    <div className={`border-2 border-stone-200 rounded-lg overflow-hidden ${bgColor}`}>
-      <button
-        type="button"
-        onClick={onToggleExpand}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-black/5 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <Icon className="w-5 h-5 text-red-600" />
-          <div className="text-left">
-            <div className="font-semibold text-stone-900 text-sm">{title}</div>
-            <div className="text-xs text-stone-500">{subtitle}</div>
-          </div>
-        </div>
-        <span className="text-stone-500 text-sm">{expanded ? '▼' : '▶'}</span>
-      </button>
-      
-      {expanded && (
-        <div className="px-4 pb-4 space-y-2">
-          {options.map(option => {
-            const isChecked = selectedItems.some(
-              item => item.commitment === commitment && item.type === option.type
-            );
-            return (
-              <label
-                key={option.type}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded cursor-pointer transition-all ${
-                  isChecked
-                    ? 'bg-teal-50 border border-teal-500'
-                    : 'bg-white border border-stone-200 hover:border-teal-400'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => onToggle(commitment, option.type)}
-                  className="h-4 w-4 text-teal-600 focus:ring-2 focus:ring-teal-500 rounded border-stone-300 cursor-pointer"
-                />
-                <span className={`text-sm ${isChecked ? 'text-teal-900 font-medium' : 'text-stone-700'}`}>
-                  {option.label}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-
-  // Options for each commitment level
-  const lookingForHighOptions = [
-    { type: 'technical_cofounder', label: 'Technical cofounder' },
-    { type: 'business_cofounder', label: 'Business cofounder' },
-    { type: 'domain_expert_cofounder', label: 'Domain expert cofounder' },
-    { type: 'founding_team_member', label: 'Founding team member' },
-    { type: 'other', label: 'Other' }
-  ];
-
-  const lookingForMediumOptions = [
-    { type: 'advisor', label: 'Advisor or mentor' },
-    { type: 'service_provider', label: 'Receiving paid services' },
-    { type: 'beta_tester', label: 'Beta tester' },
-    { type: 'other', label: 'Other' }
-  ];
-
-  const lookingForLowOptions = [
-    { type: 'introduction', label: 'Introductions' },
-    { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'feedback', label: 'Feedback on idea / product' },
-    { type: 'other', label: 'Other' }
-  ];
-
-  const openToHighOptions = [
-    { type: 'being_technical_cofounder', label: 'Being a technical cofounder' },
-    { type: 'being_business_cofounder', label: 'Being a business cofounder' },
-    { type: 'being_domain_expert_cofounder', label: 'Being a domain expert cofounder' },
-    { type: 'joining_founding_team', label: 'Joining as founding team member' },
-    { type: 'other', label: 'Other' }
-  ];
-
-  const openToMediumOptions = [
-    { type: 'mentoring', label: 'Advising / mentoring' },
-    { type: 'providing_services', label: 'Providing paid services' },
-    { type: 'being_beta_tester', label: 'Being a beta tester' },
-    { type: 'other', label: 'Other' }
-  ];
-
-  const openToLowOptions = [
-    { type: 'making_introductions', label: 'Making introductions' },
-    { type: 'coffee_chats', label: 'Coffee chats / networking' },
-    { type: 'giving_feedback', label: 'Giving feedback on ideas / products' },
-    { type: 'other', label: 'Other' }
-  ];
+    background.trim().length >= 50 &&
+    interests.trim().length >= 30 &&
+    expertise.trim().length >= 30;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100">
@@ -540,29 +294,29 @@ export default function ProfilePage() {
       </nav>
 
       {/* Profile Content */}
-      <div className="max-w-[900px] mx-auto px-8 py-12">
-        <div className="bg-white rounded-xl border border-stone-200 p-10" style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }}>
+      <div className="max-w-4xl mx-auto px-8 py-8">
+        <div className="bg-white border border-stone-200/50">
           {/* Header */}
-          <div className="flex justify-between items-start mb-8">
+          <div className="flex justify-between items-start px-8 py-6 border-b border-stone-200/50">
             <div>
-              <h1 className="text-2xl font-semibold text-stone-900 mb-2 tracking-tight" style={{ fontFamily: 'var(--font-ibm-plex)', fontWeight: 600 }}>
+              <h1 className="text-xl font-semibold text-stone-900 mb-1 tracking-tight" style={{ fontFamily: 'var(--font-ibm-plex)', fontWeight: 600 }}>
                 Your Profile
               </h1>
-              <p className="text-sm text-stone-600">
+              <p className="text-xs text-stone-500">
                 {isEditing ? 'Update your profile information' : 'Manage your profile and visibility settings'}
               </p>
             </div>
             {!isEditing && (
               <button
                 onClick={handleEditMode}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
+                className="px-4 py-2 bg-stone-900 text-white text-xs font-medium hover:bg-stone-800 transition-colors"
               >
                 Edit Profile
               </button>
             )}
           </div>
 
-          <div className="space-y-8">
+          <div className="px-8 py-6 space-y-6">
             {/* Profile Picture */}
             <div>
               <label className="block text-xs mb-2 text-stone-500 font-medium">
@@ -620,306 +374,155 @@ export default function ProfilePage() {
                   type="text"
                   value={linkedinUrl}
                   onChange={(e) => setLinkedinUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-teal-600 focus:ring-0 text-sm text-stone-900 placeholder:text-stone-400 transition-colors"
+                  className="w-full px-4 py-2.5 border border-stone-200 focus:outline-none focus:border-teal-600 focus:ring-0 text-sm text-stone-900 placeholder:text-stone-400 transition-colors"
                   placeholder="https://linkedin.com/in/yourname"
                 />
               )}
             </div>
 
-            {/* Resume */}
+            {/* Background Question 1 */}
             <div>
-              <label className="block text-sm mb-2 font-medium text-stone-700">
-                Resume <span className="text-stone-400">(optional)</span>
-              </label>
-              {!isEditing ? (
-                resumeFilename ? (
-                  <p className="text-sm text-stone-700">{resumeFilename}</p>
-                ) : (
-                  <p className="text-sm text-stone-400">Not provided</p>
-                )
-              ) : (
-                <div>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleResumeUpload}
-                    className="w-full text-sm text-stone-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 file:cursor-pointer cursor-pointer"
-                  />
-                  <p className="mt-1 text-xs text-stone-400">
-                    Upload your resume (PDF or Word, max 5MB)
-                  </p>
-                  {(resumeFile || resumeFilename) && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-teal-600">
-                      <span>✓</span>
-                      <span>{resumeFile ? resumeFile.name : resumeFilename}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Background */}
-            <div>
-              <label className="block text-sm mb-2 font-medium text-stone-700">
-                What's your background? What have you built or worked on?
+              <label className="block text-sm mb-2 font-medium text-stone-800">
+                What's your story? Brag a little.
               </label>
               {!isEditing ? (
                 <p className={`text-sm whitespace-pre-wrap ${background && background !== 'Profile incomplete' ? 'text-stone-700' : 'text-stone-400'}`}>
                   {background && background !== 'Profile incomplete' ? background : 'Not provided'}
                 </p>
               ) : (
-                <>
-                  <textarea
-                    value={background}
-                    onChange={(e) => setBackground(e.target.value)}
-                    rows={4}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[110px] transition-colors ${
-                      showValidation && background.length < 150
-                        ? 'border-red-300 bg-red-50/30 focus:border-red-500'
-                        : 'border-stone-200 focus:border-teal-600'
-                    }`}
-                    style={{ lineHeight: '1.6' }}
-                    placeholder="e.g., 10 years software engineering at startups. Built recommendation systems at Spotify, led platform team at fintech startup. Strong in Python, distributed systems, ML infrastructure."
-                  />
-                  <p className={`mt-2 text-xs ${background.length >= 150 ? 'text-teal-600' : showValidation && background.length < 150 ? 'text-red-600' : 'text-stone-400'}`}>
-                    {background.length}/150 minimum
-                  </p>
-                </>
+                <textarea
+                  value={background}
+                  onChange={(e) => setBackground(e.target.value)}
+                  rows={3}
+                  className={`w-full px-4 py-3 border focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 transition-colors ${
+                    showValidation && background.trim().length < 50
+                      ? 'border-red-300 bg-red-50/30 focus:border-red-500'
+                      : 'border-stone-200 focus:border-teal-600'
+                  }`}
+                  style={{ lineHeight: '1.6' }}
+                  placeholder="8 years software engineering at Google and Stripe - built payments infrastructure handling $10B in transactions, led teams of 15 engineers"
+                />
               )}
             </div>
 
-            {/* Working On */}
+            {/* Background Question 2 */}
             <div>
-              <label className="block text-sm mb-2 font-medium text-stone-700">
-                What are you working on now? (Or exploring?)
+              <label className="block text-sm mb-2 font-medium text-stone-800">
+                What problems are you obsessed with?
               </label>
               {!isEditing ? (
-                <p className={`text-sm whitespace-pre-wrap ${workingOn && workingOn !== 'Profile incomplete' ? 'text-stone-700' : 'text-stone-400'}`}>
-                  {workingOn && workingOn !== 'Profile incomplete' ? workingOn : 'Not provided'}
+                <p className={`text-sm whitespace-pre-wrap ${interests && interests !== 'Profile incomplete' ? 'text-stone-700' : 'text-stone-400'}`}>
+                  {interests && interests !== 'Profile incomplete' ? interests : 'Not provided'}
                 </p>
               ) : (
-                <>
-                  <textarea
-                    value={workingOn}
-                    onChange={(e) => setWorkingOn(e.target.value)}
-                    rows={3}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
-                      showValidation && workingOn.length < 100
-                        ? 'border-red-300 bg-red-50/30 focus:border-red-500'
-                        : 'border-stone-200 focus:border-teal-600'
-                    }`}
-                    style={{ lineHeight: '1.6' }}
-                    placeholder="e.g., Building a biotech marketplace connecting researchers to lab services. In beta with 50 users, raising seed round."
-                  />
-                  <p className={`mt-2 text-xs ${workingOn.length >= 100 ? 'text-teal-600' : showValidation && workingOn.length < 100 ? 'text-red-600' : 'text-stone-400'}`}>
-                    {workingOn.length}/100 minimum
-                  </p>
-                </>
+                <textarea
+                  value={interests}
+                  onChange={(e) => setInterests(e.target.value)}
+                  rows={2}
+                  className={`w-full px-4 py-3 border focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 transition-colors ${
+                    showValidation && interests.trim().length < 30
+                      ? 'border-red-300 bg-red-50/30 focus:border-red-500'
+                      : 'border-stone-200 focus:border-teal-600'
+                  }`}
+                  style={{ lineHeight: '1.6' }}
+                  placeholder="Making carbon markets actually work at scale"
+                />
               )}
             </div>
 
-            {/* Expertise */}
+            {/* Background Question 3 */}
             <div>
-              <label className="block text-sm mb-2 font-medium text-stone-700">
-                How can you help others? What do you bring to the table?
+              <label className="block text-sm mb-2 font-medium text-stone-800">
+                What do you know a lot about?
               </label>
               {!isEditing ? (
                 <p className={`text-sm whitespace-pre-wrap ${expertise && expertise !== 'Profile incomplete' ? 'text-stone-700' : 'text-stone-400'}`}>
                   {expertise && expertise !== 'Profile incomplete' ? expertise : 'Not provided'}
                 </p>
               ) : (
-                <>
-                  <textarea
-                    value={expertise}
-                    onChange={(e) => setExpertise(e.target.value)}
-                    rows={3}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[90px] transition-colors ${
-                      showValidation && expertise.length < 150
-                        ? 'border-red-300 bg-red-50/30 focus:border-red-500'
-                        : 'border-stone-200 focus:border-teal-600'
-                    }`}
-                    style={{ lineHeight: '1.6' }}
-                    placeholder="e.g., Financial modeling, fundraising strategy, investor pitch development. Know several angel investors in the Maine ecosystem who invest in early-stage climate tech."
-                  />
-                  <p className={`mt-2 text-xs ${expertise.length >= 150 ? 'text-teal-600' : showValidation && expertise.length < 150 ? 'text-red-600' : 'text-stone-400'}`}>
-                    {expertise.length}/150 minimum
-                  </p>
-                </>
-              )}
-            </div>
-
-            {/* Looking For & Open To */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-              {/* Looking For */}
-              <div>
-                <h3 className="text-sm font-semibold text-stone-800 mb-3" style={{ fontFamily: 'var(--font-ibm-plex)' }}>
-                  I'm looking for
-                </h3>
-                {!isEditing ? (
-                  <div className="space-y-4">
-                    {lookingFor.length > 0 ? (
-                      Object.entries(groupByCommitment(lookingFor)).map(([commitment, items]) => (
-                        items.length > 0 && (
-                          <div key={commitment}>
-                            <div className="flex items-center gap-2 mb-2">
-                              {(() => {
-                                const Icon = getCommitmentIcon(commitment);
-                                return <Icon className="w-4 h-4 text-red-600" />;
-                              })()}
-                              <span className="text-xs font-semibold text-stone-600">{getCommitmentLabel(commitment)}</span>
-                            </div>
-                            <div className="space-y-1.5 ml-6">
-                              {items.map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-sm text-stone-700">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
-                                  {formatCommitmentItem(item)}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      ))
-                    ) : (
-                      <p className="text-sm text-stone-400">Not specified</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <CommitmentSection
-                      title="High Commitment"
-                      subtitle="Long-term partnership, significant time investment"
-                      commitment="high"
-                      Icon={Flame}
-                      bgColor="bg-red-50/30"
-                      options={lookingForHighOptions}
-                      selectedItems={lookingFor}
-                      onToggle={toggleLookingFor}
-                      expanded={expandedLookingFor.high}
-                      onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, high: !prev.high }))}
-                    />
-                    <CommitmentSection
-                      title="Medium Commitment"
-                      subtitle="Ongoing relationship, regular interaction"
-                      commitment="medium"
-                      Icon={Handshake}
-                      bgColor="bg-amber-50/30"
-                      options={lookingForMediumOptions}
-                      selectedItems={lookingFor}
-                      onToggle={toggleLookingFor}
-                      expanded={expandedLookingFor.medium}
-                      onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, medium: !prev.medium }))}
-                    />
-                    <CommitmentSection
-                      title="Low Commitment"
-                      subtitle="One-time help, quick interaction"
-                      commitment="low"
-                      Icon={Coffee}
-                      bgColor="bg-teal-50/30"
-                      options={lookingForLowOptions}
-                      selectedItems={lookingFor}
-                      onToggle={toggleLookingFor}
-                      expanded={expandedLookingFor.low}
-                      onToggleExpand={() => setExpandedLookingFor(prev => ({ ...prev, low: !prev.low }))}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Open To */}
-              <div>
-                <h3 className="text-sm font-semibold text-stone-800 mb-3" style={{ fontFamily: 'var(--font-ibm-plex)' }}>
-                  I'm open to
-                </h3>
-                {!isEditing ? (
-                  <div className="space-y-4">
-                    {openTo.length > 0 ? (
-                      Object.entries(groupByCommitment(openTo)).map(([commitment, items]) => (
-                        items.length > 0 && (
-                          <div key={commitment}>
-                            <div className="flex items-center gap-2 mb-2">
-                              {(() => {
-                                const Icon = getCommitmentIcon(commitment);
-                                return <Icon className="w-4 h-4 text-red-600" />;
-                              })()}
-                              <span className="text-xs font-semibold text-stone-600">{getCommitmentLabel(commitment)}</span>
-                            </div>
-                            <div className="space-y-1.5 ml-6">
-                              {items.map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-sm text-stone-700">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
-                                  {formatCommitmentItem(item)}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      ))
-                    ) : (
-                      <p className="text-sm text-stone-400">Not specified</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <CommitmentSection
-                      title="High Commitment"
-                      subtitle="Long-term partnership, significant time investment"
-                      commitment="high"
-                      Icon={Flame}
-                      bgColor="bg-red-50/30"
-                      options={openToHighOptions}
-                      selectedItems={openTo}
-                      onToggle={toggleOpenTo}
-                      expanded={expandedOpenTo.high}
-                      onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, high: !prev.high }))}
-                    />
-                    <CommitmentSection
-                      title="Medium Commitment"
-                      subtitle="Ongoing relationship, regular interaction"
-                      commitment="medium"
-                      Icon={Handshake}
-                      bgColor="bg-amber-50/30"
-                      options={openToMediumOptions}
-                      selectedItems={openTo}
-                      onToggle={toggleOpenTo}
-                      expanded={expandedOpenTo.medium}
-                      onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, medium: !prev.medium }))}
-                    />
-                    <CommitmentSection
-                      title="Low Commitment"
-                      subtitle="One-time help, quick interaction"
-                      commitment="low"
-                      Icon={Coffee}
-                      bgColor="bg-teal-50/30"
-                      options={openToLowOptions}
-                      selectedItems={openTo}
-                      onToggle={toggleOpenTo}
-                      expanded={expandedOpenTo.low}
-                      onToggleExpand={() => setExpandedOpenTo(prev => ({ ...prev, low: !prev.low }))}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Not Looking For */}
-            <div className="pt-4">
-              <label className="block text-sm mb-2 font-medium text-stone-700">
-                What are you NOT looking for? <span className="text-stone-400">(optional)</span>
-              </label>
-              {!isEditing ? (
-                <p className={`text-sm whitespace-pre-wrap ${notLookingFor ? 'text-stone-700' : 'text-stone-400'}`}>
-                  {notLookingFor || 'Not specified'}
-                </p>
-              ) : (
                 <textarea
-                  value={notLookingFor}
-                  onChange={(e) => setNotLookingFor(e.target.value)}
+                  value={expertise}
+                  onChange={(e) => setExpertise(e.target.value)}
                   rows={2}
-                  className="w-full px-4 py-3 border border-stone-200 rounded-lg focus:outline-none focus:border-teal-600 focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 transition-colors"
+                  className={`w-full px-4 py-3 border focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 transition-colors ${
+                    showValidation && expertise.trim().length < 30
+                      ? 'border-red-300 bg-red-50/30 focus:border-red-500'
+                      : 'border-stone-200 focus:border-teal-600'
+                  }`}
                   style={{ lineHeight: '1.6' }}
-                  placeholder="e.g., Not interested in sales roles, avoid cryptocurrency projects"
+                  placeholder="Distributed systems architecture - built services handling 1B+ requests per day with 99.99% uptime"
                 />
               )}
+            </div>
+
+            {/* How Can You Help */}
+            <div className="space-y-4 pt-4">
+              <div>
+                <label className="block text-sm mb-3 font-medium text-stone-800">
+                  How can you help others? (check all that apply)
+                </label>
+                {!isEditing ? (
+                  <div className="space-y-2">
+                    {howIHelp.length > 0 ? (
+                      howIHelp.map((help) => (
+                        <div key={help} className="flex items-center gap-2 text-sm text-stone-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-teal-600"></span>
+                          {help === 'advising' && 'Advising or mentoring'}
+                          {help === 'coffee_chats' && 'Coffee chats about my domain'}
+                          {help === 'feedback' && 'Feedback or spot advice'}
+                          {help === 'introductions' && 'Making introductions'}
+                          {help === 'not_available' && 'Not available right now'}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-stone-400">Not specified</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {[
+                      { value: 'advising', label: 'Advising or mentoring' },
+                      { value: 'coffee_chats', label: 'Coffee chats about my domain' },
+                      { value: 'feedback', label: 'Feedback or spot advice' },
+                      { value: 'introductions', label: 'Making introductions' },
+                      { value: 'not_available', label: 'Not available right now' }
+                    ].map(option => {
+                      const isNotAvailable = option.value === 'not_available';
+                      const notAvailableSelected = howIHelp.includes('not_available');
+                      const otherOptionsSelected = howIHelp.some(h => h !== 'not_available');
+                      
+                      // Disable "not_available" if other options are selected
+                      // Disable other options if "not_available" is selected
+                      const isDisabled = isNotAvailable ? otherOptionsSelected : notAvailableSelected;
+                      
+                      return (
+                        <label
+                          key={option.value}
+                          className={`flex items-center gap-3 px-4 py-2.5 transition-all border ${
+                            isDisabled 
+                              ? 'bg-stone-50 border-stone-200 cursor-not-allowed opacity-50' 
+                              : 'bg-white border-stone-200 hover:border-stone-300 cursor-pointer'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={howIHelp.includes(option.value)}
+                            onChange={() => toggleHowIHelp(option.value)}
+                            disabled={isDisabled}
+                            className={`h-4 w-4 text-teal-600 focus:ring-1 focus:ring-teal-500 border-stone-300 ${
+                              isDisabled ? 'cursor-not-allowed' : 'cursor-pointer'
+                            }`}
+                          />
+                          <span className={`text-sm ${isDisabled ? 'text-stone-400' : 'text-stone-700'}`}>
+                            {option.label}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
             </div>
 
             {/* Visibility Setting */}
@@ -962,24 +565,20 @@ export default function ProfilePage() {
 
             {/* Action Buttons */}
             {isEditing && (
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-6 border-t border-stone-200/50">
                 <button
                   onClick={handleCancel}
-                  className="px-6 py-3 border-2 border-stone-200 text-stone-600 rounded-lg text-sm font-medium hover:border-stone-300 hover:bg-stone-50 transition-all"
+                  className="px-6 py-2.5 border border-stone-200 text-stone-600 text-xs font-medium hover:border-stone-300 hover:bg-stone-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={!isFormValid || isSaving}
-                  style={{
-                    backgroundColor: isFormValid && !isSaving ? '#0D9488' : '#E7E5E4',
-                    color: isFormValid && !isSaving ? 'white' : '#A8A29E'
-                  }}
-                  className={`flex-1 py-3 px-6 rounded-lg font-medium text-sm transition-all ${
+                  className={`flex-1 py-2.5 px-6 font-medium text-xs transition-colors ${
                     isFormValid && !isSaving
-                      ? 'hover:opacity-90 shadow-sm cursor-pointer'
-                      : 'cursor-not-allowed'
+                      ? 'bg-stone-900 text-white hover:bg-stone-800 cursor-pointer'
+                      : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                   }`}
                 >
                   {isSaving ? 'Saving...' : 'Save Changes'}

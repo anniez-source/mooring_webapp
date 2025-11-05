@@ -24,14 +24,13 @@ interface SavedContact {
   user_id: string;
   saved_profile_id: string;
   name: string;
-  bio: string;
+  background: string;
+  interests: string;
   expertise: string;
-  looking_for: any[];
-  open_to: any[];
+  how_i_help: string[];
   photo_url: string;
   linkedin_url: string;
   email: string;
-  slack_id?: string;
   why_saved: string;
   saved_at: string;
 }
@@ -99,7 +98,7 @@ export default function SavedContactsPage() {
       const profileIds = savedData.map(sc => sc.saved_profile_id);
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, name, email, linkedin_url, profile_picture, background, expertise, looking_for, open_to')
+        .select('user_id, name, email, linkedin_url, profile_picture, background, interests, expertise, how_i_help')
         .in('user_id', profileIds);
 
       if (profilesError) {
@@ -119,14 +118,13 @@ export default function SavedContactsPage() {
             user_id: item.user_id,
             saved_profile_id: item.saved_profile_id,
             name: profile.name,
-            bio: profile.background || 'No bio provided',
+            background: profile.background || 'No background provided',
+            interests: profile.interests || '',
             expertise: profile.expertise || '',
-            looking_for: profile.looking_for || [],
-            open_to: profile.open_to || [],
+            how_i_help: profile.how_i_help || [],
             photo_url: profile.profile_picture || '',
             linkedin_url: profile.linkedin_url || '',
             email: profile.email,
-            slack_id: undefined,
             why_saved: item.reason || 'Saved from AI matching',
             saved_at: item.created_at
           };
@@ -182,44 +180,6 @@ export default function SavedContactsPage() {
     }
   };
 
-  const formatCommitmentItem = (item: { type: string; commitment: string }) => {
-    const labels: { [key: string]: string } = {
-      // Looking For - High Commitment
-      'technical_cofounder': 'Technical cofounder',
-      'business_cofounder': 'Business cofounder',
-      'team_member': 'Team member',
-      'long_term_project_collaborator': 'Long-term project collaborator',
-      // Looking For - Medium Commitment
-      'advisor': 'Advisor',
-      'service_provider': 'Service provider (ongoing)',
-      'project_collaboration': 'Project collaborator (specific project)',
-      'beta_tester': 'Beta tester',
-      // Looking For - Low Commitment
-      'introduction': 'Introduction to someone specific',
-      'quick_consultation': 'Quick consultation (30 min)',
-      'coffee_chats': 'Coffee chats / networking',
-      // Open To - High Commitment
-      'being_technical_cofounder': 'Being a technical cofounder',
-      'being_business_cofounder': 'Being a business cofounder',
-      'joining_team': 'Joining a team',
-      'long_term_collaboration': 'Long-term project collaboration',
-      // Open To - Medium Commitment
-      'advising': 'Advising / mentoring',
-      'mentoring': 'Advising / mentoring',
-      'project_collaboration_open': 'Collaborating on projects',
-      'collaborating_projects': 'Collaborating on projects',
-      'providing_services': 'Providing services',
-      'being_beta_tester': 'Being a beta tester',
-      // Open To - Low Commitment
-      'making_introductions': 'Making introductions',
-      'offering_consultation': 'Offering quick consultations (30 min)',
-      // Other
-      'other': 'Other'
-    };
-    
-    return labels[item.type] || item.type;
-  };
-
   const handleLinkedInClick = async (profileId: string) => {
     try {
       await fetch('/api/track-click', {
@@ -252,12 +212,8 @@ export default function SavedContactsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-orange-50">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 flex items-center justify-center">
+        <p className="text-xs text-stone-500">Loading...</p>
       </div>
     );
   }
@@ -283,27 +239,28 @@ export default function SavedContactsPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-8 py-16">
+      <div className="max-w-5xl mx-auto px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-stone-900 mb-1 tracking-tight" style={{ fontFamily: 'var(--font-ibm-plex)', fontWeight: 600 }}>
+        <div className="mb-6 pb-6 border-b border-stone-200/50">
+          <h1 className="text-xl font-semibold text-stone-900 mb-1 tracking-tight" style={{ fontFamily: 'var(--font-ibm-plex)', fontWeight: 600 }}>
             Saved Contacts
           </h1>
-          <p className="text-sm text-stone-500">
+          <p className="text-xs text-stone-500">
             {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'} saved
           </p>
         </div>
 
         {/* Contacts List */}
         {contacts.length > 0 ? (
-          <div className="space-y-4">
-            {contacts.map((contact) => {
+          <div className="space-y-0 border border-stone-200/50">
+            {contacts.map((contact, index) => {
               const isExpanded = expandedCard === contact.saved_profile_id;
               return (
                 <div 
                   key={contact.saved_profile_id}
-                  className="bg-white rounded-xl border border-stone-200 p-6 hover:border-stone-300 transition-all relative"
-                  style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }}
+                  className={`bg-white p-5 hover:bg-stone-50/50 transition-colors relative ${
+                    index !== 0 ? 'border-t border-stone-200/50' : ''
+                  }`}
                 >
                   {/* Remove button */}
                   <button
@@ -311,114 +268,111 @@ export default function SavedContactsPage() {
                       e.stopPropagation();
                       removeContact(contact.user_id, contact.saved_profile_id);
                     }}
-                    className="absolute top-4 right-4 p-1 rounded text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+                    className="absolute top-4 right-4 p-1 text-stone-400 hover:text-stone-700 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
 
                   {!isExpanded ? (
                     /* Collapsed View */
-                    <div className="flex items-start gap-4 pr-8">
+                    <div className="flex items-start gap-3 pr-8">
                       {/* Profile Icon */}
-                      <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="w-9 h-9 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0">
                         {contact.photo_url ? (
                           <img 
                             src={contact.photo_url} 
                             alt={contact.name}
-                            className="w-10 h-10 rounded-lg object-cover"
+                            className="w-9 h-9 rounded-full object-cover"
                           />
                         ) : (
-                          <span className="text-white font-medium text-sm">{contact.name.charAt(0)}</span>
+                          <span className="text-white font-semibold text-xs">{contact.name.charAt(0)}</span>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         {/* Name and time */}
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-stone-900 text-base">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <h3 className="font-semibold text-stone-900 text-sm">
                             {contact.name}
                           </h3>
-                          <span className="text-xs text-stone-400">• Saved {formatTimeAgo(contact.saved_at)}</span>
+                          <span className="text-xs text-stone-400">· {formatTimeAgo(contact.saved_at)}</span>
                         </div>
 
                         {/* Bio preview */}
-                        <p className="text-sm text-stone-700 leading-relaxed mb-3" style={{ lineHeight: '1.6' }}>
-                          {contact.bio.substring(0, 150) + '...'}
+                        <p className="text-xs text-stone-600 leading-relaxed mb-2.5" style={{ lineHeight: '1.5' }}>
+                          {contact.background.substring(0, 120) + '...'}
                         </p>
 
                         {/* Actions row */}
-                        <div className="flex items-center gap-3 pt-2">
+                        <div className="flex items-center gap-2 text-xs">
                           <button
                             onClick={() => setExpandedCard(contact.saved_profile_id)}
-                            className="text-xs text-stone-500 hover:text-teal-600 font-medium transition-colors"
+                            className="text-stone-500 hover:text-stone-900 underline transition-colors"
                           >
-                            View full profile
+                            Show more
                           </button>
 
-                          <span className="text-stone-300">•</span>
+                          <span className="text-stone-300">·</span>
 
                         <a
                           href={`mailto:${contact.email}`}
-                          className="text-xs text-stone-500 hover:text-teal-600 font-medium transition-colors flex items-center gap-1.5"
+                          className="flex items-center gap-1 px-2 py-1 bg-stone-900 text-white hover:bg-stone-800 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEmailClick(contact.saved_profile_id);
                           }}
                         >
-                          <Mail className="w-3.5 h-3.5" />
+                          <Mail className="w-3 h-3" />
                           Email
                         </a>
                         
                         {contact.linkedin_url && (
-                          <>
-                            <span className="text-stone-300">•</span>
-                            <a
-                              href={contact.linkedin_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-stone-500 hover:text-teal-600 font-medium transition-colors flex items-center gap-1.5"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleLinkedInClick(contact.saved_profile_id);
-                              }}
-                            >
-                              <Linkedin className="w-3.5 h-3.5" />
-                              LinkedIn
-                            </a>
-                          </>
+                          <a
+                            href={contact.linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 px-2 py-1 border border-stone-200 text-stone-600 hover:bg-stone-50 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLinkedInClick(contact.saved_profile_id);
+                            }}
+                          >
+                            <Linkedin className="w-3 h-3" />
+                            LinkedIn
+                          </a>
                         )}
                         </div>
                       </div>
                     </div>
                   ) : (
                     /* Expanded View - Full Profile Card */
-                    <div className="space-y-6">
+                    <div className="space-y-4 pr-8">
                       {/* Header with profile image */}
-                      <div className="flex items-start gap-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="flex items-start gap-3">
+                        <div className="w-11 h-11 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center flex-shrink-0">
                           {contact.photo_url ? (
                             <img 
                               src={contact.photo_url} 
                               alt={contact.name}
-                              className="w-16 h-16 rounded-lg object-cover"
+                              className="w-11 h-11 rounded-full object-cover"
                             />
                           ) : (
-                            <span className="text-white font-medium text-xl">{contact.name.charAt(0)}</span>
+                            <span className="text-white font-semibold text-sm">{contact.name.charAt(0)}</span>
                           )}
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-stone-900 text-lg mb-1">
+                          <h3 className="font-semibold text-stone-900 text-sm mb-1">
                             {contact.name}
                           </h3>
-                          <div className="flex items-center gap-3 text-xs text-stone-500 mb-3">
-                            <span>Saved {formatTimeAgo(contact.saved_at)}</span>
+                          <div className="flex items-center gap-2 text-xs text-stone-500">
+                            <span>{formatTimeAgo(contact.saved_at)}</span>
                           {contact.email && (
                             <>
-                              <span>•</span>
+                              <span>·</span>
                               <a 
                                 href={`mailto:${contact.email}`} 
-                                className="hover:text-teal-600"
+                                className="hover:text-stone-900 transition-colors"
                                 onClick={() => handleEmailClick(contact.saved_profile_id)}
                               >
                                 {contact.email}
@@ -427,12 +381,12 @@ export default function SavedContactsPage() {
                           )}
                           {contact.linkedin_url && (
                             <>
-                              <span>•</span>
+                              <span>·</span>
                               <a 
                                 href={contact.linkedin_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                className="hover:text-teal-600 flex items-center gap-1"
+                                className="hover:text-stone-900 flex items-center gap-1 transition-colors"
                                 onClick={() => handleLinkedInClick(contact.saved_profile_id)}
                               >
                                 <Linkedin className="w-3 h-3" />
@@ -445,68 +399,64 @@ export default function SavedContactsPage() {
                       </div>
 
                       {/* AI Match Reason */}
-                      <div className="bg-teal-50 border border-teal-100 rounded-lg p-4">
-                        <p className="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-2">Why We Matched You</p>
-                        <p className="text-sm text-stone-700 leading-relaxed">
+                      <div className="border-l-2 border-stone-900 pl-3 py-1">
+                        <p className="text-xs font-medium text-stone-500 mb-1">Why relevant</p>
+                        <p className="text-xs text-stone-700 leading-relaxed" style={{ lineHeight: '1.5' }}>
                           {contact.why_saved}
                         </p>
                       </div>
 
                       {/* Background */}
                       <div>
-                        <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Background</h4>
-                        <p className="text-sm text-stone-700 leading-relaxed" style={{ lineHeight: '1.6' }}>
-                          {contact.bio}
+                        <h4 className="text-xs font-medium text-stone-500 mb-1.5">Background</h4>
+                        <p className="text-xs text-stone-700 leading-relaxed" style={{ lineHeight: '1.5' }}>
+                          {contact.background}
                         </p>
                       </div>
+
+                      {/* Interests */}
+                      {contact.interests && (
+                        <div>
+                          <h4 className="text-xs font-medium text-stone-500 mb-1.5">Problems They're Obsessed With</h4>
+                          <p className="text-xs text-stone-700 leading-relaxed" style={{ lineHeight: '1.5' }}>
+                            {contact.interests}
+                          </p>
+                        </div>
+                      )}
 
                       {/* Expertise */}
                       {contact.expertise && (
                         <div>
-                          <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Expertise</h4>
-                          <p className="text-sm text-stone-700 leading-relaxed" style={{ lineHeight: '1.6' }}>
+                          <h4 className="text-xs font-medium text-stone-500 mb-1.5">Expertise</h4>
+                          <p className="text-xs text-stone-700 leading-relaxed" style={{ lineHeight: '1.5' }}>
                             {contact.expertise}
                           </p>
                         </div>
                       )}
 
-                      {/* Looking For & Open To */}
-                      <div className="flex gap-8">
-                        {/* Looking For */}
-                        {contact.looking_for && contact.looking_for.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Looking For</h4>
-                            <div className="space-y-1.5">
-                              {contact.looking_for.map((item: any, idx: number) => (
-                                <div key={idx} className="flex items-center gap-2 text-sm text-stone-700">
-                                  <span className="w-1 h-1 rounded-full bg-teal-600"></span>
-                                  {formatCommitmentItem(item)}
-                                </div>
-                              ))}
-                            </div>
+                      {/* How They Help */}
+                      {contact.how_i_help && contact.how_i_help.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-medium text-stone-500 mb-1.5">How They Help</h4>
+                          <div className="space-y-1">
+                            {contact.how_i_help.map((help: string, idx: number) => (
+                              <div key={idx} className="flex items-center gap-1.5 text-xs text-stone-700">
+                                <span className="w-1 h-1 rounded-full bg-stone-400"></span>
+                                {help === 'advising' && 'Advising or mentoring'}
+                                {help === 'coffee_chats' && 'Coffee chats about my domain'}
+                                {help === 'feedback' && 'Feedback or spot advice'}
+                                {help === 'introductions' && 'Making introductions'}
+                                {help === 'not_available' && 'Not available right now'}
+                              </div>
+                            ))}
                           </div>
-                        )}
-
-                        {/* Open To */}
-                        {contact.open_to && contact.open_to.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Open To</h4>
-                            <div className="space-y-1.5">
-                              {contact.open_to.map((item: any, idx: number) => (
-                                <div key={idx} className="flex items-center gap-2 text-sm text-stone-700">
-                                  <span className="w-1 h-1 rounded-full bg-teal-600"></span>
-                                  {formatCommitmentItem(item)}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       {/* Collapse button */}
                       <button
                         onClick={() => setExpandedCard(null)}
-                        className="w-full text-xs text-stone-500 hover:text-teal-600 font-medium py-2 border-t border-stone-200 transition-colors"
+                        className="text-xs text-stone-500 hover:text-stone-900 underline pt-2 transition-colors"
                       >
                         Show less
                       </button>
@@ -518,19 +468,19 @@ export default function SavedContactsPage() {
           </div>
         ) : (
           /* Empty State */
-          <div className="flex flex-col items-center justify-center py-32">
-            <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-4">
-              <Heart className="w-8 h-8 text-stone-400" />
+          <div className="flex flex-col items-center justify-center py-24 border border-stone-200/50 bg-white">
+            <div className="w-12 h-12 flex items-center justify-center mb-3">
+              <Heart className="w-6 h-6 text-stone-400" />
             </div>
-            <h2 className="text-xl font-semibold text-stone-900 mb-2">
+            <h2 className="text-sm font-medium text-stone-900 mb-1">
               No contacts saved yet
             </h2>
-            <p className="text-sm text-stone-500 mb-6 max-w-sm text-center">
-              Find people through AI matching and save them here for easy access
+            <p className="text-xs text-stone-500 mb-4 max-w-sm text-center">
+              Find people through AI matching and save them here
             </p>
             <Link
               href="/chat"
-              className="px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+              className="px-4 py-2 bg-stone-900 text-white hover:bg-stone-800 transition-colors text-xs font-medium"
             >
               Find People
             </Link>

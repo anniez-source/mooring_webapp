@@ -42,7 +42,7 @@ export default function CompleteProfileModal() {
 
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('background, expertise, looking_for, open_to')
+          .select('background, interests, expertise')
           .eq('user_id', userData.user_id)
           .single();
 
@@ -52,17 +52,18 @@ export default function CompleteProfileModal() {
           return;
         }
 
-        // Check if required fields are filled
+        // Check if required fields are filled (minimum 100 characters each)
         const hasBackground = profileData.background && 
                              profileData.background !== 'Profile incomplete' && 
-                             profileData.background.length >= 150;
+                             profileData.background.length >= 100;
+        const hasInterests = profileData.interests && 
+                            profileData.interests !== 'Profile incomplete' && 
+                            profileData.interests.length >= 100;
         const hasExpertise = profileData.expertise && 
                             profileData.expertise !== 'Profile incomplete' && 
-                            profileData.expertise.length >= 150;
-        const hasLookingFor = Array.isArray(profileData.looking_for) && profileData.looking_for.length > 0;
-        const hasOpenTo = Array.isArray(profileData.open_to) && profileData.open_to.length > 0;
+                            profileData.expertise.length >= 100;
 
-        const isProfileComplete = hasBackground && hasExpertise && hasLookingFor && hasOpenTo;
+        const isProfileComplete = hasBackground && hasInterests && hasExpertise;
 
         setShowModal(!isProfileComplete);
         setIsChecking(false);

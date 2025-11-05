@@ -19,9 +19,9 @@ export async function POST(req: NextRequest) {
       }, { status: 401 });
     }
 
-    const { savedProfileId, reason, chatSessionId } = await req.json();
+    const { savedProfileId, reason } = await req.json();
     
-    console.log('[Save Contact] Request data:', { savedProfileId, chatSessionId, reason: reason?.substring(0, 50) });
+    console.log('[Save Contact] Request data:', { savedProfileId, reason: reason?.substring(0, 50) });
 
     if (!savedProfileId) {
       return NextResponse.json({ 
@@ -59,23 +59,12 @@ export async function POST(req: NextRequest) {
       }, { status: 404 });
     }
 
-    // Validate UUID format (only insert if it's a real UUID, not the temporary string)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    const validChatSessionId = chatSessionId && uuidRegex.test(chatSessionId) ? chatSessionId : null;
-    
-    console.log('[Save Contact] Chat session ID validation:', { 
-      received: chatSessionId, 
-      isValid: validChatSessionId !== null,
-      willSave: validChatSessionId 
-    });
-
     // Save to saved_contacts table
     const { data, error } = await supabase
       .from('saved_contacts')
       .insert({
         user_id: userData.user_id,
         saved_profile_id: savedProfileId,
-        chat_session_id: validChatSessionId,
         reason: reason || 'Saved from AI matching',
       })
       .select();

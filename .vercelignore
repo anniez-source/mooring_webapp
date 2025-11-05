@@ -1,0 +1,22 @@
+# SQL migration scripts (not needed in production)
+*.sql
+
+# Documentation (not needed in production)
+*.md
+!README.md
+
+# Scripts (run locally, not in production)
+scripts/
+
+# Development files
+*.log
+.env.local
+.env
+
+# Test files
+check-profile.js
+
+# Git
+.git
+.gitignore
+
