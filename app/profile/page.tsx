@@ -290,6 +290,7 @@ export default function ProfilePage() {
             </Link>
             <div className="flex items-center space-x-6">
               <Link href="/communities" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Communities</Link>
+              <Link href="/my-cluster" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">My Cluster</Link>
               <Link href="/chat" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Find People</Link>
               <Link href="/saved" className="text-sm text-stone-500 hover:text-stone-900 transition-colors">Saved</Link>
               <Link href="/profile" className="text-sm text-stone-900 font-medium">Profile</Link>
