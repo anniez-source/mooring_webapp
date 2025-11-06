@@ -327,7 +327,7 @@ export async function getAdaptiveEmbedding(userId: string): Promise<number[] | n
     if (!profileEmbedding) return null;
 
     // If no behavior yet, just return profile
-    if (!behaviorEmbedding) {
+    if (!behaviorEmbedding || !behavior) {
       return profileEmbedding;
     }
 

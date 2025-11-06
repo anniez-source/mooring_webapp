@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       clusters: transformedClusters,
-      orgName: orgMembership.organizations?.name || 'Your Organization',
+      orgName: (orgMembership.organizations as any)?.name || 'Your Organization',
       totalClusters: transformedClusters.length,
       currentUserId: userData.user_id  // Include user's ID for highlighting
     });

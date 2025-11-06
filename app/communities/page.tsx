@@ -38,7 +38,7 @@ export default function CommunitiesPage() {
         if (response.ok) {
           const data = await response.json();
           // Sort clusters alphabetically by label
-          const sortedClusters = (data.clusters || []).sort((a, b) => 
+          const sortedClusters = (data.clusters || []).sort((a: any, b: any) => 
             a.label.localeCompare(b.label)
           );
           setClusters(sortedClusters);
