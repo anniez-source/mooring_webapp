@@ -23,16 +23,19 @@ function parseVector(vector: any): number[] | null {
 }
 
 export async function GET(req: NextRequest) {
+  console.log('[My Cluster] ===== REQUEST STARTED =====');
+  
   try {
-    console.log('[My Cluster] Starting request...');
+    console.log('[My Cluster] Attempting to get auth...');
     const { userId: clerkUserId } = await auth();
+    console.log('[My Cluster] Clerk User ID:', clerkUserId);
     
     if (!clerkUserId) {
       console.log('[My Cluster] No Clerk user ID found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('[My Cluster] Clerk User ID:', clerkUserId);
+    console.log('[My Cluster] Auth successful, proceeding...');
 
     // Get database user_id from Clerk user ID
     const { data: userData, error: userError } = await supabase
@@ -143,13 +146,25 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[My Cluster] FATAL ERROR:', error);
+    console.error('[My Cluster] ===== FATAL ERROR =====');
+    console.error('[My Cluster] Error object:', error);
+    console.error('[My Cluster] Error type:', typeof error);
+    console.error('[My Cluster] Error message:', error instanceof Error ? error.message : String(error));
     console.error('[My Cluster] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      details: String(error)
-    }, { status: 500 });
+    
+    try {
+      return NextResponse.json({ 
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        details: String(error)
+      }, { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (jsonError) {
+      console.error('[My Cluster] Failed to create JSON response:', jsonError);
+      return new NextResponse('Internal Server Error', { status: 500 });
+    }
   }
 }
 
