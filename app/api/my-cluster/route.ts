@@ -7,11 +7,28 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Helper to parse Supabase vector strings into arrays
+function parseVector(vector: any): number[] | null {
+  if (!vector) return null;
+  if (Array.isArray(vector)) return vector;
+  if (typeof vector === 'string') {
+    try {
+      const parsed = JSON.parse(vector);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   try {
+    console.log('[My Cluster] Starting request...');
     const { userId: clerkUserId } = await auth();
     
     if (!clerkUserId) {
+      console.log('[My Cluster] No Clerk user ID found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -55,21 +72,43 @@ export async function GET(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // Parse the embedding (Supabase returns it as a string)
+    const parsedEmbedding = parseVector(userProfile.embedding);
+    console.log('[My Cluster] Embedding type:', typeof userProfile.embedding);
+    console.log('[My Cluster] Parsed embedding exists:', !!parsedEmbedding);
+    console.log('[My Cluster] Parsed embedding length:', parsedEmbedding?.length);
+
+    if (!parsedEmbedding) {
+      console.error('[My Cluster] Failed to parse embedding');
+      return NextResponse.json({ 
+        error: 'Failed to parse your profile embedding',
+        needsRegeneration: true
+      }, { status: 400 });
+    }
+
     // Find nearest neighbors using vector similarity
+    console.log('[My Cluster] About to call match_profiles_contextual...');
+    
     // Get top 30 similar profiles (excluding self)
     const { data: matches, error: matchError } = await supabase.rpc(
       'match_profiles_contextual',
       {
-        query_embedding: userProfile.embedding,
+        query_embedding: parsedEmbedding,
         match_threshold: 0.0, // Get all matches, we'll filter by top N
         match_count: 31 // Get 31 so we can exclude self and have 30
       }
     );
 
+    console.log('[My Cluster] RPC call completed');
+    console.log('[My Cluster] Match error:', matchError);
+    console.log('[My Cluster] Matches found:', matches?.length);
+
     if (matchError) {
       console.error('[My Cluster] Error finding matches:', matchError);
       return NextResponse.json({ 
-        error: 'Failed to find similar profiles' 
+        error: 'Failed to find similar profiles',
+        details: matchError.message,
+        code: matchError.code
       }, { status: 500 });
     }
 
@@ -104,9 +143,12 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[My Cluster] Error:', error);
+    console.error('[My Cluster] FATAL ERROR:', error);
+    console.error('[My Cluster] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json({ 
-      error: 'Internal server error' 
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      details: String(error)
     }, { status: 500 });
   }
 }

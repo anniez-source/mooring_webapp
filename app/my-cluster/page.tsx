@@ -47,19 +47,40 @@ export default function MyClusterPage() {
   const fetchClusterData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/my-cluster');
+      console.log('[My Cluster] Fetching cluster data...');
+      
+      const response = await fetch('/api/my-cluster', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('[My Cluster] Response status:', response.status);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API Error:', errorData);
-        throw new Error(errorData.error || 'Failed to load your cluster');
+        let errorMessage = `Server returned ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.error('[My Cluster] Error data:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          if (errorData.details) {
+            console.error('[My Cluster] Error details:', errorData.details);
+          }
+        } catch (parseErr) {
+          console.error('[My Cluster] Could not parse error response');
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      console.log('Cluster data loaded:', data);
+      console.log('[My Cluster] Cluster data loaded:', {
+        totalMatches: data.totalMatches,
+        userName: data.userProfile?.name
+      });
       setClusterData(data);
     } catch (err) {
-      console.error('Error loading cluster:', err);
+      console.error('[My Cluster] Fatal error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load cluster');
     } finally {
       setLoading(false);
