@@ -144,7 +144,7 @@ export default function MyClusterPage() {
     const outerRadius = 340;
     const nodeRadius = 50;
 
-    const layout = [];
+    const layout: Array<SimilarProfile & { x: number; y: number; radius: number; ring: string }> = [];
 
     // Inner ring (high similarity)
     innerRing.forEach((profile, idx) => {
