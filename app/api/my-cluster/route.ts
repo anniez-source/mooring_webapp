@@ -39,11 +39,20 @@ export async function GET(req: NextRequest) {
       .eq('user_id', dbUserId)
       .single();
 
-    if (profileError || !userProfile || !userProfile.embedding) {
+    if (profileError || !userProfile) {
       console.error('[My Cluster] Error fetching user profile:', profileError);
       return NextResponse.json({ 
-        error: 'Profile not found or missing embedding' 
+        error: 'Profile not found',
+        details: profileError?.message 
       }, { status: 404 });
+    }
+
+    if (!userProfile.embedding) {
+      console.error('[My Cluster] User profile has no embedding');
+      return NextResponse.json({ 
+        error: 'Your profile needs an embedding to find similar people. Please update your profile and try again.',
+        needsEmbedding: true
+      }, { status: 400 });
     }
 
     // Find nearest neighbors using vector similarity

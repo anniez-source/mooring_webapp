@@ -50,10 +50,13 @@ export default function MyClusterPage() {
       const response = await fetch('/api/my-cluster');
       
       if (!response.ok) {
-        throw new Error('Failed to load your cluster');
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to load your cluster');
       }
 
       const data = await response.json();
+      console.log('Cluster data loaded:', data);
       setClusterData(data);
     } catch (err) {
       console.error('Error loading cluster:', err);
