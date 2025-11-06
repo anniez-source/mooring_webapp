@@ -61,37 +61,97 @@ export default function CommunitiesPage() {
 
   // Generate cluster positions and colors for visualization
   const generateClusterData = () => {
-    const width = 800;
+    const width = 1000;
     const height = 600;
-    const padding = 100;
+    const centerX = width / 2;
+    const centerY = height / 2;
     
-    return clusters.map((cluster, index) => {
-      // Assign colors based on keywords
-      const getColor = () => {
-        const keywords = cluster.keywords.join(' ').toLowerCase();
-        if (keywords.includes('climate') || keywords.includes('ocean') || keywords.includes('carbon')) return '#14b8a6'; // teal
-        if (keywords.includes('health') || keywords.includes('bio') || keywords.includes('medical')) return '#ef4444'; // red
-        if (keywords.includes('ai') || keywords.includes('ml') || keywords.includes('data')) return '#3b82f6'; // blue
-        if (keywords.includes('education') || keywords.includes('learning')) return '#f59e0b'; // amber
-        if (keywords.includes('finance') || keywords.includes('fintech')) return '#10b981'; // green
-        return '#8b5cf6'; // purple (default)
-      };
+    // Find min and max member counts for relative scaling
+    const memberCounts = clusters.map(c => c.member_count);
+    const minMembers = Math.min(...memberCounts);
+    const maxMembers = Math.max(...memberCounts);
+    
+    // Assign colors and domain to each cluster
+    const clustersWithMeta = clusters.map(cluster => {
+      const keywords = cluster.keywords.join(' ').toLowerCase();
+      let domain = 'other';
+      let colors = { fill: '#7c3aed', stroke: '#8b5cf6', light: '#c4b5fd' };
       
-      // Calculate radius based on member count (min 40, max 120)
-      const radius = Math.min(120, Math.max(40, 30 + cluster.member_count * 8));
+      if (keywords.includes('climate') || keywords.includes('ocean') || keywords.includes('carbon')) {
+        domain = 'climate';
+        colors = { fill: '#0d9488', stroke: '#14b8a6', light: '#5eead4' };
+      } else if (keywords.includes('health') || keywords.includes('bio') || keywords.includes('medical')) {
+        domain = 'health';
+        colors = { fill: '#dc2626', stroke: '#ef4444', light: '#fca5a5' };
+      } else if (keywords.includes('ai') || keywords.includes('ml') || keywords.includes('data')) {
+        domain = 'ai';
+        colors = { fill: '#2563eb', stroke: '#3b82f6', light: '#93c5fd' };
+      } else if (keywords.includes('education') || keywords.includes('learning')) {
+        domain = 'education';
+        colors = { fill: '#d97706', stroke: '#f59e0b', light: '#fcd34d' };
+      } else if (keywords.includes('finance') || keywords.includes('fintech')) {
+        domain = 'finance';
+        colors = { fill: '#059669', stroke: '#10b981', light: '#6ee7b7' };
+      }
       
-      // Position clusters in a spiral pattern
-      const angle = (index / clusters.length) * Math.PI * 2;
-      const spiral = 1 + index * 0.3;
-      const x = width / 2 + Math.cos(angle) * spiral * 50;
-      const y = height / 2 + Math.sin(angle) * spiral * 50;
+      // Scale radius relative to the data range
+      // Map member_count from [minMembers, maxMembers] to [60px, 180px]
+      const minRadius = 60;
+      const maxRadius = 180;
+      
+      let radius;
+      if (minMembers === maxMembers) {
+        // All clusters have same size
+        radius = (minRadius + maxRadius) / 2;
+      } else {
+        // Linear interpolation based on member count
+        const normalizedSize = (cluster.member_count - minMembers) / (maxMembers - minMembers);
+        radius = minRadius + normalizedSize * (maxRadius - minRadius);
+      }
+      
+      return { ...cluster, domain, colors, radius };
+    });
+    
+    // Group clusters by domain
+    const domainGroups: { [key: string]: typeof clustersWithMeta } = {};
+    clustersWithMeta.forEach(c => {
+      if (!domainGroups[c.domain]) domainGroups[c.domain] = [];
+      domainGroups[c.domain].push(c);
+    });
+    
+    // Position each domain group in a specific area
+    const domainPositions: { [key: string]: { x: number, y: number } } = {
+      'climate': { x: centerX - 250, y: centerY - 150 },
+      'health': { x: centerX + 250, y: centerY - 150 },
+      'ai': { x: centerX, y: centerY + 150 },
+      'education': { x: centerX - 250, y: centerY + 150 },
+      'finance': { x: centerX + 250, y: centerY + 150 },
+      'other': { x: centerX, y: centerY - 150 },
+    };
+    
+    // Position clusters within their domain group
+    return clustersWithMeta.map((cluster) => {
+      const groupCenter = domainPositions[cluster.domain] || { x: centerX, y: centerY };
+      const groupMembers = domainGroups[cluster.domain];
+      const indexInGroup = groupMembers.indexOf(cluster);
+      
+      // If only one cluster in group, place at center
+      if (groupMembers.length === 1) {
+        return {
+          ...cluster,
+          x: groupCenter.x,
+          y: groupCenter.y,
+        };
+      }
+      
+      // Arrange multiple clusters in a circle around the group center
+      const angle = (indexInGroup / groupMembers.length) * Math.PI * 2;
+      const radius = 80; // Distance from group center
       
       return {
         ...cluster,
-        x: Math.max(radius + padding, Math.min(width - radius - padding, x)),
-        y: Math.max(radius + padding, Math.min(height - radius - padding, y)),
-        radius,
-        color: getColor(),
+        x: groupCenter.x + Math.cos(angle) * radius,
+        y: groupCenter.y + Math.sin(angle) * radius,
       };
     });
   };
@@ -186,15 +246,16 @@ export default function CommunitiesPage() {
           </div>
         ) : viewMode === 'map' ? (
           /* Cluster Map View */
-          <div className="bg-white border border-stone-200 rounded-lg p-8 overflow-hidden">
-            <svg viewBox="0 0 800 600" className="w-full" style={{ maxHeight: '600px' }}>
-              {/* Background grid */}
+          <div className="bg-gradient-to-br from-stone-50 to-stone-100 rounded-xl p-8 shadow-inner">
+            <svg viewBox="0 0 1000 600" className="w-full" style={{ maxHeight: '600px' }}>
+              {/* Subtle background */}
               <defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f5f5f4" strokeWidth="1"/>
-                </pattern>
+                <radialGradient id="bgGradient" cx="50%" cy="50%">
+                  <stop offset="0%" stopColor="#fafaf9" />
+                  <stop offset="100%" stopColor="#f5f5f4" />
+                </radialGradient>
               </defs>
-              <rect width="800" height="600" fill="url(#grid)" />
+              <rect width="1000" height="600" fill="url(#bgGradient)" rx="12" />
               
               {/* Cluster bubbles */}
               {clusterData.map((cluster) => {
@@ -203,112 +264,165 @@ export default function CommunitiesPage() {
                 
                 return (
                   <g key={cluster.cluster_id}>
-                    {/* Glow effect for hovered cluster */}
+                    {/* Outer glow ring for hovered cluster */}
                     {isHovered && (
                       <circle
                         cx={cluster.x}
                         cy={cluster.y}
-                        r={cluster.radius + 10}
-                        fill={cluster.color}
-                        opacity="0.2"
+                        r={cluster.radius + 15}
+                        fill="none"
+                        stroke={cluster.colors.light}
+                        strokeWidth="8"
+                        opacity="0.4"
                         className="animate-pulse"
                       />
                     )}
                     
-                    {/* Main cluster circle */}
+                    {/* Shadow */}
+                    <circle
+                      cx={cluster.x + 2}
+                      cy={cluster.y + 3}
+                      r={cluster.radius}
+                      fill="#00000015"
+                      className="pointer-events-none"
+                    />
+                    
+                    {/* Main cluster circle with gradient */}
+                    <defs>
+                      <radialGradient id={`grad-${cluster.cluster_id}`}>
+                        <stop offset="0%" stopColor={cluster.colors.light} />
+                        <stop offset="100%" stopColor={cluster.colors.fill} />
+                      </radialGradient>
+                    </defs>
                     <circle
                       cx={cluster.x}
                       cy={cluster.y}
                       r={cluster.radius}
-                      fill={cluster.color}
-                      opacity={isHovered ? "0.9" : "0.7"}
-                      stroke={isUserInCluster ? "#0d9488" : "#fff"}
-                      strokeWidth={isUserInCluster ? "4" : "2"}
-                      className="cursor-pointer transition-all duration-200"
+                      fill={`url(#grad-${cluster.cluster_id})`}
+                      stroke={isUserInCluster ? "#0d9488" : cluster.colors.stroke}
+                      strokeWidth={isUserInCluster ? "5" : isHovered ? "3" : "2"}
+                      className="cursor-pointer transition-all duration-300"
                       onMouseEnter={() => setHoveredCluster(cluster.cluster_id)}
                       onMouseLeave={() => setHoveredCluster(null)}
                       onClick={() => router.push(`/communities/${cluster.cluster_id}`)}
-                      style={{ filter: isHovered ? 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))' : 'none' }}
+                      style={{ 
+                        filter: isHovered ? 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.08))',
+                        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                        transformOrigin: `${cluster.x}px ${cluster.y}px`
+                      }}
                     />
                     
-                    {/* Member count */}
+                    {/* Member count with background */}
+                    <circle
+                      cx={cluster.x}
+                      cy={cluster.y}
+                      r={cluster.radius * 0.4}
+                      fill="white"
+                      opacity="0.9"
+                      className="pointer-events-none"
+                    />
                     <text
                       x={cluster.x}
                       y={cluster.y}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fill="white"
-                      fontSize="24"
+                      fill={cluster.colors.fill}
+                      fontSize={Math.min(32, cluster.radius * 0.5)}
                       fontWeight="bold"
                       className="pointer-events-none"
                     >
                       {cluster.member_count}
                     </text>
                     
-                    {/* Label (show on hover or for user's cluster) */}
-                    {(isHovered || isUserInCluster) && (
-                      <g>
-                        <rect
-                          x={cluster.x - cluster.label.length * 3}
-                          y={cluster.y + cluster.radius + 10}
-                          width={cluster.label.length * 6}
-                          height="24"
-                          fill="white"
-                          stroke="#e7e5e4"
-                          strokeWidth="1"
-                          rx="4"
-                          className="pointer-events-none"
-                        />
-                        <text
-                          x={cluster.x}
-                          y={cluster.y + cluster.radius + 23}
-                          textAnchor="middle"
-                          fill="#1c1917"
-                          fontSize="12"
-                          fontWeight="600"
-                          className="pointer-events-none"
-                        >
-                          {cluster.label.substring(0, 30)}
-                        </text>
-                      </g>
+                    {/* Label below (always show, not just on hover) */}
+                    <text
+                      x={cluster.x}
+                      y={cluster.y + cluster.radius + 20}
+                      textAnchor="middle"
+                      fill="#57534e"
+                      fontSize="13"
+                      fontWeight="600"
+                      className="pointer-events-none"
+                    >
+                      {cluster.label.length > 25 ? cluster.label.substring(0, 25) + '...' : cluster.label}
+                    </text>
+                    
+                    {/* User's cluster indicator */}
+                    {isUserInCluster && (
+                      <text
+                        x={cluster.x}
+                        y={cluster.y + cluster.radius + 38}
+                        textAnchor="middle"
+                        fill="#0d9488"
+                        fontSize="11"
+                        fontWeight="700"
+                        className="pointer-events-none"
+                      >
+                        ⭐ You're here
+                      </text>
                     )}
                   </g>
                 );
               })}
             </svg>
             
-            {/* Legend */}
-            <div className="mt-6 pt-6 border-t border-stone-200">
-              <h4 className="text-sm font-semibold text-stone-900 mb-3">Legend</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-teal-500"></div>
-                  <span className="text-xs text-stone-600">Climate/Ocean</span>
+            {/* Info Panel */}
+            <div className="mt-6 pt-6 border-t border-stone-300">
+              <div className="flex items-start gap-8">
+                {/* Color Legend */}
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold text-stone-900 mb-3 uppercase tracking-wide">Domain Colors</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 shadow-sm"></div>
+                      <span className="text-xs text-stone-700 font-medium">Climate/Ocean</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow-sm"></div>
+                      <span className="text-xs text-stone-700 font-medium">Health/Bio</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-sm"></div>
+                      <span className="text-xs text-stone-700 font-medium">AI/ML/Data</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 shadow-sm"></div>
+                      <span className="text-xs text-stone-700 font-medium">Education</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-green-400 to-green-600 shadow-sm"></div>
+                      <span className="text-xs text-stone-700 font-medium">Finance</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 shadow-sm"></div>
+                      <span className="text-xs text-stone-700 font-medium">Other</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                  <span className="text-xs text-stone-600">Health/Bio</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                  <span className="text-xs text-stone-600">AI/Data</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-amber-500"></div>
-                  <span className="text-xs text-stone-600">Education</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                  <span className="text-xs text-stone-600">Finance</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-purple-500"></div>
-                  <span className="text-xs text-stone-600">Other</span>
+                
+                {/* Instructions */}
+                <div className="flex-1 bg-stone-100 rounded-lg p-4">
+                  <h4 className="text-sm font-bold text-stone-900 mb-2 uppercase tracking-wide">How to Use</h4>
+                  <ul className="space-y-1.5 text-xs text-stone-700">
+                    <li className="flex items-start gap-2">
+                      <span className="text-stone-400">●</span>
+                      <span><strong>Bubble size</strong> = number of members (larger = more people)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-stone-400">●</span>
+                      <span><strong>Hover</strong> to highlight and scale up</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-stone-400">●</span>
+                      <span><strong>Click</strong> any cluster to view members</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-teal-600">⭐</span>
+                      <span><strong>Teal border</strong> = your cluster</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
-              <p className="text-xs text-stone-500 mt-3">
-                Circle size = number of members. Click any cluster to explore.
-              </p>
             </div>
           </div>
         ) : (
