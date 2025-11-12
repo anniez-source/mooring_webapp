@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 import { Heart, Linkedin, Mail, Users } from 'lucide-react';
 import { useBehaviorTracking } from '@/lib/useBehaviorTracking';
+import UserProfileDropdown from '../components/UserProfileDropdown';
 
 interface SimilarProfile {
   user_id: string;
@@ -205,8 +207,28 @@ export default function MyClusterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-stone-50">
+      {/* Navbar */}
+      <nav className="bg-white/60 backdrop-blur-sm border-b border-white/20 relative z-50">
+        <div className="max-w-6xl mx-auto px-8">
+          <div className="flex justify-between h-16 items-center">
+            <Link href="/" className="flex items-center gap-2">
+              <img src="/mooring-logo.svg" alt="Mooring" className="w-6 h-6" />
+              <span className="text-2xl font-bold text-stone-900 tracking-tight" style={{ fontFamily: 'var(--font-plus-jakarta)' }}>Mooring</span>
+            </Link>
+            <div className="flex items-center space-x-6">
+              <Link href="/communities" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Communities</Link>
+              <Link href="/my-cluster" className="text-sm text-stone-900 font-medium">My Cluster</Link>
+              <Link href="/chat" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Find People</Link>
+              <Link href="/saved" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Saved</Link>
+              <Link href="/profile" className="text-sm text-stone-600 hover:text-stone-900 transition-colors">Profile</Link>
+              <UserProfileDropdown />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-stone-900 mb-2">Your Personal Cluster</h1>

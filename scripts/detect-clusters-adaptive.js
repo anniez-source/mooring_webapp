@@ -1,8 +1,8 @@
 /**
- * Adaptive Clustering Script
+ * Identity-Based Clustering Script
  * 
- * This version blends static profile embeddings with dynamic behavior embeddings
- * for continuous learning based on user interactions
+ * Clusters users based purely on their identity (background, expertise, interests)
+ * Does NOT use behavioral data - "My Clusters" should show similar people, not similar behavior
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -156,33 +156,114 @@ async function detectClustersForOrg(orgId, orgName) {
     return;
   }
 
-  console.log(`  Clustering ${enrichedProfiles.length} members with adaptive embeddings...`);
+  console.log(`  Clustering ${enrichedProfiles.length} members with identity-based embeddings...`);
 
-  // Determine number of clusters
-  const k = Math.max(8, Math.min(10, Math.floor(Math.sqrt(enrichedProfiles.length))));
-  
-  // Create adaptive embeddings (profile + behavior blend)
+  // Use pure profile embeddings (background, expertise, interests only)
+  // NO behavioral blending - clusters should reflect identity, not behavior
   const embeddings = enrichedProfiles.map(p => {
     const profileEmbedding = typeof p.embedding === 'string' 
       ? JSON.parse(p.embedding) 
       : p.embedding;
     
-    const behavior = behaviorMap.get(p.user_id);
-    
-    // Blend if behavior embedding exists
-    if (behavior?.avg_embedding) {
-      return blendEmbeddings(
-        profileEmbedding,
-        behavior.avg_embedding,
-        behavior.engagement_score
-      );
-    }
-    
     return Array.isArray(profileEmbedding) ? profileEmbedding : Object.values(profileEmbedding);
   });
   
-  // Run k-means with adaptive embeddings
-  const result = kmeans(embeddings, k, { initialization: 'kmeans++' });
+  // Test multiple k values to find optimal clustering
+  console.log(`  Testing k values from 6 to 10...`);
+  const kTests = [];
+  for (let testK = 6; testK <= 10; testK++) {
+    const testResult = kmeans(embeddings, testK, { initialization: 'kmeans++' });
+    kTests.push({ k: testK, result: testResult });
+  }
+
+  // Calculate silhouette score for cluster quality
+  function calculateSilhouetteScore(embeddings, clusterAssignments, k) {
+    const silhouetteScores = [];
+    
+    // Group points by cluster
+    const clusterPoints = {};
+    for (let i = 0; i < clusterAssignments.length; i++) {
+      const cluster = clusterAssignments[i];
+      if (!clusterPoints[cluster]) clusterPoints[cluster] = [];
+      clusterPoints[cluster].push(i);
+    }
+    
+    // Calculate silhouette for each point
+    for (let i = 0; i < embeddings.length; i++) {
+      const ownCluster = clusterAssignments[i];
+      const ownClusterPoints = clusterPoints[ownCluster];
+      
+      // If cluster has only 1 point, silhouette is 0
+      if (ownClusterPoints.length === 1) {
+        silhouetteScores.push(0);
+        continue;
+      }
+      
+      // Calculate a(i): average distance to points in same cluster
+      let aSum = 0;
+      for (const j of ownClusterPoints) {
+        if (i !== j) {
+          const dist = Math.sqrt(
+            embeddings[i].reduce((sum, val, idx) => 
+              sum + Math.pow(val - embeddings[j][idx], 2), 0)
+          );
+          aSum += dist;
+        }
+      }
+      const a = aSum / (ownClusterPoints.length - 1);
+      
+      // Calculate b(i): minimum average distance to points in other clusters
+      let minB = Infinity;
+      for (let otherCluster = 0; otherCluster < k; otherCluster++) {
+        if (otherCluster === ownCluster) continue;
+        const otherPoints = clusterPoints[otherCluster] || [];
+        if (otherPoints.length === 0) continue;
+        
+        let bSum = 0;
+        for (const j of otherPoints) {
+          const dist = Math.sqrt(
+            embeddings[i].reduce((sum, val, idx) => 
+              sum + Math.pow(val - embeddings[j][idx], 2), 0)
+          );
+          bSum += dist;
+        }
+        const b = bSum / otherPoints.length;
+        minB = Math.min(minB, b);
+      }
+      
+      // Silhouette score: (b - a) / max(a, b)
+      const s = (minB - a) / Math.max(a, minB);
+      silhouetteScores.push(s);
+    }
+    
+    return silhouetteScores.reduce((sum, s) => sum + s, 0) / silhouetteScores.length;
+  }
+  
+  // Calculate silhouette scores for each k value
+  function getSilhouetteRating(score) {
+    if (score >= 0.50) return '🟢 Strong';
+    if (score >= 0.35) return '🟡 Moderate';
+    if (score >= 0.20) return '🟠 Weak (but normal for multidisciplinary)';
+    return '🔴 Poor';
+  }
+  
+  const silhouetteResults = [];
+  for (const test of kTests) {
+    const score = calculateSilhouetteScore(embeddings, test.result.clusters, test.k);
+    silhouetteResults.push({ ...test, score });
+    console.log(`    k=${test.k}: Silhouette = ${score.toFixed(3)} (${getSilhouetteRating(score)})`);
+  }
+  
+  // Pick the k with the best silhouette score
+  const bestResult = silhouetteResults.reduce((best, curr) => 
+    curr.score > best.score ? curr : best
+  );
+  
+  console.log(`  ✅ Selected k=${bestResult.k} with silhouette score: ${bestResult.score.toFixed(3)}`);
+  
+  const k = bestResult.k;
+  const result = bestResult.result;
+  const silhouetteScore = bestResult.score;
 
   // Calculate distances for outlier detection
   const calculateDistance = (point, centroid) => {
@@ -277,7 +358,7 @@ async function detectClustersForOrg(orgId, orgName) {
     });
   }
 
-  console.log(`  Found ${clusters.length} adaptive clusters:`);
+  console.log(`  Found ${clusters.length} identity-based clusters:`);
   clusters.forEach(c => console.log(`    - ${c.label}: ${c.memberIds.length} members`));
 
   // Save to database
@@ -312,7 +393,7 @@ async function detectClustersForOrg(orgId, orgName) {
     return;
   }
   
-  console.log(`  ✓ Saved ${clusters.length} adaptive clusters`);
+  console.log(`  ✓ Saved ${clusters.length} identity-based clusters`);
   
   // Insert cluster members
   const clusterMembersData = [];
@@ -340,7 +421,7 @@ async function detectClustersForOrg(orgId, orgName) {
     console.log(`  ✓ Saved ${clusterMembersData.length} cluster memberships`);
   }
   
-  console.log(`  ✓ Adaptive clustering complete`);
+  console.log(`  ✓ Identity-based clustering complete`);
 }
 
 async function detectClustersForAllOrgs() {
@@ -361,7 +442,7 @@ async function detectClustersForAllOrgs() {
 
 detectClustersForAllOrgs()
   .then(() => {
-    console.log('\n✨ Adaptive clustering complete! System is now learning from behavior.');
+    console.log('\n✨ Identity-based clustering complete! Clusters based on who people are, not what they do.');
     process.exit(0);
   })
   .catch(error => {

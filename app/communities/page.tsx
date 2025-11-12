@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import UserProfileDropdown from '../components/UserProfileDropdown';
-import { Users, Grid3x3, Circle } from 'lucide-react';
+import { Users, List } from 'lucide-react';
+import ForceDirectedGraph from './ForceDirectedGraph';
 
 interface Cluster {
   cluster_id: string;
@@ -22,7 +23,8 @@ export default function CommunitiesPage() {
   const [orgName, setOrgName] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('map');
+  const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
+  const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
   const [hoveredCluster, setHoveredCluster] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +61,11 @@ export default function CommunitiesPage() {
     }
   }, [user, isLoaded]);
 
-  // Generate cluster positions and colors for visualization
+  const handleClusterClick = (clusterId: string) => {
+    setSelectedCluster(clusterId === selectedCluster ? null : clusterId);
+  };
+
+  // OLD VISUALIZATION CODE (keep for list view)
   const generateClusterData = () => {
     const width = 1200;
     const height = 700;
@@ -240,15 +246,15 @@ export default function CommunitiesPage() {
             {clusters.length > 0 && (
               <div className="flex gap-2 bg-white border border-stone-200 rounded-lg p-1">
                 <button
-                  onClick={() => setViewMode('map')}
+                  onClick={() => setViewMode('graph')}
                   className={`flex items-center gap-2 px-4 py-2 rounded transition-colors ${
-                    viewMode === 'map'
+                    viewMode === 'graph'
                       ? 'bg-stone-900 text-white'
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  <Circle className="w-4 h-4" />
-                  <span className="text-sm font-medium">Map</span>
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm font-medium">Graph</span>
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
@@ -258,13 +264,22 @@ export default function CommunitiesPage() {
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  <Grid3x3 className="w-4 h-4" />
+                  <List className="w-4 h-4" />
                   <span className="text-sm font-medium">List</span>
                 </button>
               </div>
             )}
           </div>
         </div>
+
+        {/* Force-Directed Graph View */}
+        {viewMode === 'graph' && clusters.length > 0 && (
+          <ForceDirectedGraph 
+            clusters={clusters}
+            currentUserId={currentUserId}
+            onClusterClick={handleClusterClick}
+          />
+        )}
 
         {isLoading ? (
           <div className="bg-white border border-stone-200 rounded-lg p-12 text-center">
@@ -284,8 +299,8 @@ export default function CommunitiesPage() {
               Find People
             </Link>
           </div>
-        ) : viewMode === 'map' ? (
-          /* Cluster Map View */
+        ) : viewMode === 'list' ? (
+          /* List View */
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200/50">
             <svg viewBox="0 0 1200 700" className="w-full" style={{ maxHeight: '700px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
               {/* Clean background */}

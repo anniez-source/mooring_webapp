@@ -8,9 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "embed-profiles": "node scripts/generate-embeddings.js",
+    "regenerate-embeddings": "node scripts/regenerate-embeddings-identity.js",
+    "cluster": "node scripts/detect-clusters-adaptive.js",
     "detect-clusters": "node scripts/detect-clusters.js",
     "generate-dummies": "node scripts/generate-dummy-profiles.js",
-    "delete-dummies": "node scripts/delete-dummies.js"
+    "delete-dummies": "node scripts/delete-dummies.js",
+    "delete-all-except-annie": "node scripts/delete-all-except-annie.js",
+    "generate-realistic": "node scripts/generate-realistic-profiles.js",
+    "generate-realistic-gpt": "node scripts/generate-realistic-profiles-gpt.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.67.0",

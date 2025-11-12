@@ -419,6 +419,13 @@ MATCHING INSTRUCTIONS:
   } catch (error: any) {
     console.error('Chat API error:', error);
     
+    // Check for Anthropic credit issues
+    if (error.message?.includes('credit balance') || error.message?.includes('insufficient_quota')) {
+      return NextResponse.json({ 
+        error: 'Anthropic API credits are low. Please add credits at https://console.anthropic.com/' 
+      }, { status: 402 });
+    }
+    
     if (error.message?.includes('invalid x-api-key')) {
       return NextResponse.json({ 
         error: 'Anthropic API key is invalid or not set.' 
@@ -432,7 +439,8 @@ MATCHING INSTRUCTIONS:
     }
     
     return NextResponse.json({ 
-      error: 'An unexpected error occurred. Please try again.' 
+      error: 'An unexpected error occurred. Please try again.',
+      details: error.message
     }, { status: 500 });
   }
 }

@@ -87,13 +87,13 @@ export async function GET(req: NextRequest) {
     // Find nearest neighbors using vector similarity
     console.log('[My Cluster] About to call match_profiles_contextual...');
     
-    // Get top 30 similar profiles (excluding self)
+    // Get similar profiles with 70%+ similarity (excluding self)
     const { data: matches, error: matchError } = await supabase.rpc(
       'match_profiles_contextual',
       {
         query_embedding: parsedEmbedding,
-        match_threshold: 0.0, // Get all matches, we'll filter by top N
-        match_count: 31 // Get 31 so we can exclude self and have 30
+        match_threshold: 0.7, // Only show 70%+ similarity
+        match_count: 50 // Get up to 50, then filter and limit to 30
       }
     );
 
@@ -110,9 +110,10 @@ export async function GET(req: NextRequest) {
       }, { status: 500 });
     }
 
-    // Filter out self and limit to top 30
+    // Filter out self, ensure 70%+ similarity, and limit to top 30
     const similarProfiles = (matches || [])
       .filter((p: any) => p.user_id !== dbUserId)
+      .filter((p: any) => (p.similarity || 0) >= 0.7) // Ensure 70%+ similarity
       .slice(0, 30)
       .map((profile: any) => ({
         user_id: profile.user_id,
