@@ -302,6 +302,7 @@ export default function OnboardPage() {
     { type: 'making_introductions', label: 'Making introductions' },
     { type: 'offering_consultation', label: 'Offering quick consultations (30 min)' },
     { type: 'coffee_chats', label: 'Coffee chats / networking' },
+    { type: 'beta_testing', label: 'Beta testing new products/features' },
     { type: 'other', label: 'Other' }
   ];
 

@@ -478,6 +478,7 @@ export default function ProfilePage() {
                           {help === 'coffee_chats' && 'Coffee chats about my domain'}
                           {help === 'feedback' && 'Feedback or spot advice'}
                           {help === 'introductions' && 'Making introductions'}
+                          {help === 'beta_testing' && 'Beta testing new products/features'}
                           {help === 'not_available' && 'Not available right now'}
                         </div>
                       ))
@@ -492,6 +493,7 @@ export default function ProfilePage() {
                       { value: 'coffee_chats', label: 'Coffee chats about my domain' },
                       { value: 'feedback', label: 'Feedback or spot advice' },
                       { value: 'introductions', label: 'Making introductions' },
+                      { value: 'beta_testing', label: 'Beta testing new products/features' },
                       { value: 'not_available', label: 'Not available right now' }
                     ].map(option => {
                       const isNotAvailable = option.value === 'not_available';
