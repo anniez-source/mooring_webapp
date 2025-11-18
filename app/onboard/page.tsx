@@ -21,8 +21,9 @@ export default function OnboardPage() {
   const { user, isLoaded } = useUser();
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [currentWork, setCurrentWork] = useState('');
-  const [expertiseOffering, setExpertiseOffering] = useState('');
+  const [background, setBackground] = useState('');
+  const [interests, setInterests] = useState('');
+  const [expertise, setExpertise] = useState('');
   const [lookingFor, setLookingFor] = useState<CommitmentItem[]>([]);
   const [openTo, setOpenTo] = useState<CommitmentItem[]>([]);
   const [consent, setConsent] = useState(false);
@@ -77,11 +78,14 @@ export default function OnboardPage() {
 
   const validate = () => {
     const newErrors: string[] = [];
-    if (currentWork.length < 150) {
-      newErrors.push('Please describe your background (minimum 150 characters)');
+    if (background.length < 150) {
+      newErrors.push('Please describe your story (minimum 150 characters)');
     }
-    if (expertiseOffering.length < 150) {
-      newErrors.push('Please describe your expertise (minimum 150 characters)');
+    if (interests.length < 100) {
+      newErrors.push('Please describe the problems you&apos;re obsessed with (minimum 100 characters)');
+    }
+    if (expertise.length < 150) {
+      newErrors.push('Please describe what you know a lot about (minimum 150 characters)');
     }
     if (lookingFor.length === 0) {
       newErrors.push('Please select at least one thing you&apos;re looking for');
@@ -143,8 +147,9 @@ export default function OnboardPage() {
         user_id: userData.user_id,
         name: userData.name,
         email: userData.email,
-        background: currentWork,
-        expertise: expertiseOffering,
+        background: background,
+        interests: interests,
+        expertise: expertise,
         looking_for: lookingFor,
         open_to: openTo,
         opted_in: consent,
@@ -181,8 +186,9 @@ export default function OnboardPage() {
   }
 
   const isFormValid =
-    currentWork.length >= 150 &&
-    expertiseOffering.length >= 150 &&
+    background.length >= 150 &&
+    interests.length >= 100 &&
+    expertise.length >= 150 &&
     lookingFor.length > 0 &&
     openTo.length > 0 &&
     consent;
@@ -381,43 +387,64 @@ export default function OnboardPage() {
               
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
-                  What's your background? What have you built or worked on?
+                  What&apos;s your story? Brag a little.
                 </label>
                 <textarea
-                  value={currentWork}
-                  onChange={(e) => setCurrentWork(e.target.value)}
+                  value={background}
+                  onChange={(e) => setBackground(e.target.value)}
                   rows={5}
                   className={`w-full px-4 py-3.5 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[140px] transition-colors ${
-                    showValidation && currentWork.length < 150
+                    showValidation && background.length < 150
                       ? 'border-red-300 bg-red-50/30 focus:border-red-500'
                       : 'border-stone-200 focus:border-teal-600'
                   }`}
                   style={{ boxShadow: 'none', lineHeight: '1.6' }}
-                  placeholder="e.g., Product manager at HubSpot for 4 years, shipped features used by 10k+ customers, worked across design and engineering teams..."
+                  placeholder="e.g., Led Customer Success teams at enterprise SaaS companies, managing $25M+ ARR and Fortune 500 implementations..."
                 />
-                <p className={`mt-2 ${currentWork.length >= 150 ? 'text-teal-600' : showValidation && currentWork.length < 150 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
-                  {currentWork.length}/150 minimum
+                <p className={`mt-2 ${background.length >= 150 ? 'text-teal-600' : showValidation && background.length < 150 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
+                  {background.length}/150 minimum
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
-                  What expertise do you have to offer?
+                  What problems are you obsessed with?
                 </label>
                 <textarea
-                  value={expertiseOffering}
-                  onChange={(e) => setExpertiseOffering(e.target.value)}
-                  rows={5}
-                  className={`w-full px-4 py-3.5 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[140px] transition-colors ${
-                    showValidation && expertiseOffering.length < 150
+                  value={interests}
+                  onChange={(e) => setInterests(e.target.value)}
+                  rows={4}
+                  className={`w-full px-4 py-3.5 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[120px] transition-colors ${
+                    showValidation && interests.length < 100
                       ? 'border-red-300 bg-red-50/30 focus:border-red-500'
                       : 'border-stone-200 focus:border-teal-600'
                   }`}
                   style={{ boxShadow: 'none', lineHeight: '1.6' }}
-                  placeholder="e.g., Climate tech and carbon markets, energy policy, product strategy, user research..."
+                  placeholder="e.g., Why organizations spend billions on software that creates expensive human middleware roles instead of solving problems directly..."
                 />
-                <p className={`mt-2 ${expertiseOffering.length >= 150 ? 'text-teal-600' : showValidation && expertiseOffering.length < 150 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
-                  {expertiseOffering.length}/150 minimum
+                <p className={`mt-2 ${interests.length >= 100 ? 'text-teal-600' : showValidation && interests.length < 100 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
+                  {interests.length}/100 minimum
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm mb-2" style={{ color: '#4B5563' }}>
+                  What do you know a lot about?
+                </label>
+                <textarea
+                  value={expertise}
+                  onChange={(e) => setExpertise(e.target.value)}
+                  rows={5}
+                  className={`w-full px-4 py-3.5 border rounded-lg focus:outline-none focus:ring-0 resize-none text-sm text-stone-900 placeholder:text-stone-400 min-h-[140px] transition-colors ${
+                    showValidation && expertise.length < 150
+                      ? 'border-red-300 bg-red-50/30 focus:border-red-500'
+                      : 'border-stone-200 focus:border-teal-600'
+                  }`}
+                  style={{ boxShadow: 'none', lineHeight: '1.6' }}
+                  placeholder="e.g., Enterprise GTM strategy, customer success operations, stakeholder management, systems thinking, organizational design..."
+                />
+                <p className={`mt-2 ${expertise.length >= 150 ? 'text-teal-600' : showValidation && expertise.length < 150 ? 'text-red-600' : 'text-stone-400'}`} style={{ fontSize: '11px' }}>
+                  {expertise.length}/150 minimum
                 </p>
               </div>
             </div>
