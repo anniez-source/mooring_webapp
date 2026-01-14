@@ -179,34 +179,34 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* For Communities */}
+      {/* What Your Community Unlocks */}
       <section className="py-24 bg-white">
         <div className="max-w-6xl mx-auto px-8">
-          <h2 className="text-4xl font-bold text-stone-900 mb-6 tracking-tight text-center" style={{ fontFamily: 'var(--font-ibm-plex)' }}>Infrastructure Your Community Needs</h2>
+          <h2 className="text-4xl font-bold text-stone-900 mb-6 tracking-tight text-center" style={{ fontFamily: 'var(--font-ibm-plex)' }}>What Your Community Unlocks</h2>
           <p className="text-xl text-stone-600 max-w-3xl mx-auto text-center leading-relaxed mb-12 font-medium">
-            At 200 members, manual introductions break. Slack becomes chaos. Directories don't work.
+            With connection infrastructure in place, your community achieves outcomes that were impossible manually.
           </p>
           
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             <div className="bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
-              <h3 className="text-xl font-semibold text-stone-900 mb-3">Scales When You Can&apos;t</h3>
+              <h3 className="text-xl font-semibold text-stone-900 mb-3">Ideas Become Reality Faster</h3>
+              <p className="text-stone-600 leading-relaxed">
+                The right collaborator doesn&apos;t just speed things up—they transform what&apos;s possible. Startups form with complementary skills from day one. Projects launch with the expertise they need. Connections amplify ideas instead of you building alone.
+              </p>
+            </div>
+            <div className="bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
+              <h3 className="text-xl font-semibold text-stone-900 mb-3">Shape Your Community Intentionally</h3>
+              <p className="text-stone-600 leading-relaxed">
+                See which clusters are growing, spot the gaps, and take action. Add programming where it&apos;s needed. Connect the right people. Make data-driven decisions instead of hoping things work.
+              </p>
+            </div>
+            <div className="bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
+              <h3 className="text-xl font-semibold text-stone-900 mb-3">Everyone Gets Connected, Not Just the Well-Networked</h3>
               <p className="text-stone-600 leading-relaxed">
                 19,900 possible pairings in a 200-person community. You can&apos;t manually facilitate them all. Mooring can.
               </p>
               <p className="text-stone-600 leading-relaxed mt-3">
-                Without infrastructure, those missed connections become lost companies and talent leaving for &quot;real&quot; ecosystems.
-              </p>
-            </div>
-            <div className="bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
-              <h3 className="text-xl font-semibold text-stone-900 mb-3">Lead With Data, Not Guesswork</h3>
-              <p className="text-stone-600 leading-relaxed">
-                Which clusters are growing? Where are the gaps? Should you add workshops, invite speakers, or let it develop naturally? Real-time intelligence to make strategic decisions about your community.
-              </p>
-            </div>
-            <div className="bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
-              <h3 className="text-xl font-semibold text-stone-900 mb-3">Essential Infrastructure</h3>
-              <p className="text-stone-600 leading-relaxed">
-                At scale, you can't manually connect everyone who should meet. Your time doesn't scale. Your memory doesn't scale. Infrastructure does.
+                The quiet builder gets the same access as the loud networker. No one falls through the cracks—and those missed connections don&apos;t become lost companies or talent leaving for &quot;real&quot; ecosystems.
               </p>
             </div>
           </div>
