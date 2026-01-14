@@ -62,7 +62,7 @@ export default function HomePage() {
             Your Best Collaborators Are Here. The Infrastructure to Connect Them Isn&apos;t.
           </h1>
           <p className="text-xl md:text-2xl text-stone-600 mb-8 max-w-3xl mx-auto leading-relaxed font-medium">
-            Mooring fixes this with connection infrastructure.
+            Mooring helps your community discover who should connect—and makes it happen.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login" className="inline-flex items-center gap-3 bg-teal-600 text-white px-8 py-4 rounded-2xl text-base font-semibold tracking-wide hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
