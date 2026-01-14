@@ -86,11 +86,8 @@ export default function HomePage() {
               <p className="text-lg text-stone-900 leading-relaxed font-semibold mb-3">
                 You&apos;re building a healthcare AI startup. You need someone who actually understands clinical workflows.
               </p>
-              <p className="text-base text-stone-600 leading-relaxed mb-4">
+              <p className="text-base text-stone-600 leading-relaxed">
                 They&apos;re here—looking for someone with your exact technical expertise. You&apos;ll never find each other scrolling LinkedIn.
-              </p>
-              <p className="text-sm text-teal-700 font-medium italic">
-                → Match on what you&apos;re building, not job titles
               </p>
             </div>
             
@@ -100,11 +97,8 @@ export default function HomePage() {
               <p className="text-lg text-stone-900 leading-relaxed font-semibold mb-3">
                 &quot;I thought I was the only person working on climate tech in Maine.&quot;
               </p>
-              <p className="text-base text-stone-600 leading-relaxed mb-4">
+              <p className="text-base text-stone-600 leading-relaxed">
                 15 others are working on climate across policy, hardware, software, and research. You just couldn&apos;t see each other.
-              </p>
-              <p className="text-sm text-teal-700 font-medium italic">
-                → Accelerate your ideas through the cluster you didn&apos;t know existed
               </p>
             </div>
             
@@ -114,11 +108,8 @@ export default function HomePage() {
               <p className="text-lg text-stone-900 leading-relaxed font-semibold mb-3">
                 You&apos;re stuck on a go-to-market problem. The answer exists in how open-source communities think about adoption.
               </p>
-              <p className="text-base text-stone-600 leading-relaxed mb-4">
+              <p className="text-base text-stone-600 leading-relaxed">
                 Someone here has that mental model. Different domain, same problem pattern. Invisible to keyword search.
-              </p>
-              <p className="text-sm text-teal-700 font-medium italic">
-                → Unlock insights from unexpected disciplines
               </p>
             </div>
           </div>
