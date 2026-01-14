@@ -59,10 +59,10 @@ export default function HomePage() {
       <header className="py-16 md:py-20 text-center">
         <div className="relative max-w-6xl mx-auto px-8">
           <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight text-stone-900" style={{ fontFamily: 'var(--font-ibm-plex)' }}>
-            Your Members Can't Find Each Other.
+            Your Best Collaborators Are Here. The Infrastructure to Connect Them Isn&apos;t.
           </h1>
           <p className="text-xl md:text-2xl text-stone-600 mb-8 max-w-3xl mx-auto leading-relaxed font-medium">
-            Mooring fixes this with connection infrastructure for accelerators and innovation hubs.
+            Mooring fixes this with connection infrastructure.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login" className="inline-flex items-center gap-3 bg-teal-600 text-white px-8 py-4 rounded-2xl text-base font-semibold tracking-wide hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
@@ -189,9 +189,12 @@ export default function HomePage() {
           
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             <div className="bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
-              <h3 className="text-xl font-semibold text-stone-900 mb-3">Scales When You Can't</h3>
+              <h3 className="text-xl font-semibold text-stone-900 mb-3">Scales When You Can&apos;t</h3>
               <p className="text-stone-600 leading-relaxed">
-                19,900 possible pairings in a 200-person community. You can't manually facilitate them all. Mooring can.
+                19,900 possible pairings in a 200-person community. You can&apos;t manually facilitate them all. Mooring can.
+              </p>
+              <p className="text-stone-600 leading-relaxed mt-3">
+                Without infrastructure, those missed connections become lost companies and talent leaving for &quot;real&quot; ecosystems.
               </p>
             </div>
             <div className="bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
