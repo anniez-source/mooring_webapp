@@ -80,45 +80,45 @@ export default function HomePage() {
           </h2>
           
           <div className="grid grid-cols-3 gap-8">
-            {/* Card 1 - Complementary Skills */}
+            {/* Card 1 - Complementary Skills (1:1 collaboration) */}
             <div className="bg-white border-l-4 border-teal-600 rounded-xl p-8 shadow-sm">
               <span className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-4 block">Complementary Skills</span>
               <p className="text-lg text-stone-900 leading-relaxed font-semibold mb-3">
-                You&apos;re building a healthcare AI startup. You need a technical cofounder who actually understands clinical workflows.
+                You&apos;re building a healthcare AI startup. You need someone who actually understands clinical workflows.
               </p>
               <p className="text-base text-stone-600 leading-relaxed mb-4">
-                They&apos;re here—looking for someone with your exact domain expertise. You&apos;ll never find each other scrolling LinkedIn.
+                They&apos;re here—looking for someone with your exact technical expertise. You&apos;ll never find each other scrolling LinkedIn.
               </p>
               <p className="text-sm text-teal-700 font-medium italic">
                 → Match on what you&apos;re building, not job titles
               </p>
             </div>
             
-            {/* Card 2 - Isolated In Your Work */}
+            {/* Card 2 - Isolated In Your Work (cluster acceleration) */}
             <div className="bg-white border-l-4 border-teal-600 rounded-xl p-8 shadow-sm">
               <span className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-4 block">Isolated In Your Work</span>
               <p className="text-lg text-stone-900 leading-relaxed font-semibold mb-3">
                 &quot;I thought I was the only person working on climate tech in Maine.&quot;
               </p>
               <p className="text-base text-stone-600 leading-relaxed mb-4">
-                Actually, 15 others are working on climate across policy, hardware, software, and research. You just couldn&apos;t see each other.
+                15 others are working on climate across policy, hardware, software, and research. You just couldn&apos;t see each other.
               </p>
               <p className="text-sm text-teal-700 font-medium italic">
-                → Discover your people and activate the cluster
+                → Accelerate your ideas through the cluster you didn&apos;t know existed
               </p>
             </div>
             
-            {/* Card 3 - Missing Collaborators */}
+            {/* Card 3 - Cross-Disciplinary Breakthroughs (patterns across domains) */}
             <div className="bg-white border-l-4 border-teal-600 rounded-xl p-8 shadow-sm">
-              <span className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-4 block">Missing Collaborators</span>
+              <span className="text-xs font-semibold text-teal-600 uppercase tracking-wider mb-4 block">Cross-Disciplinary Breakthroughs</span>
               <p className="text-lg text-stone-900 leading-relaxed font-semibold mb-3">
-                You need a technical cofounder who understands healthcare. They&apos;re looking for someone with your domain expertise.
+                You&apos;re stuck on a go-to-market problem. The answer exists in how open-source communities think about adoption.
               </p>
               <p className="text-base text-stone-600 leading-relaxed mb-4">
-                You&apos;re both here. Perfect fit. You&apos;ll never find each other through LinkedIn or events.
+                Someone here has that mental model. Different domain, same problem pattern. Invisible to keyword search.
               </p>
               <p className="text-sm text-teal-700 font-medium italic">
-                → Match on context, not keywords
+                → Unlock insights from unexpected disciplines
               </p>
             </div>
           </div>
